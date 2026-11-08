@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { parseFinancials } from '../lib/financials.mjs';
 import { extractSecPeriods, compareWithSec, fillFromSec, pickFact } from '../public/verify.mjs';
 import { getSecFacts } from '../lib/sec.mjs';
-import { buildComparison, pickPeriod, quantile, position, defaultPeers } from '../public/peers.mjs';
+import { buildComparison, pickPeriod, quantile, position, defaultGroup, peersFor, groupById, peerGroups } from '../public/peers.mjs';
 import { getPeerComparison } from '../lib/peers.mjs';
 
 const read=f=>JSON.parse(readFileSync(new URL('./fixtures/'+f,import.meta.url)));
@@ -53,7 +53,10 @@ test('Sector: mediana y cuartiles con valores pendientes excluidos',()=>{
  assert.equal(s.n,3);assert.equal(s.median,2);assert.equal(position(5,s),'above');assert.equal(position(2,s),'inside');
  const few=buildComparison([{ticker:'A',date:'x',ratios:[{id:'r',value:1}]},{ticker:'B',date:'x',ratios:[{id:'r',value:null}]}]).r;assert.equal(few.median,null);
  assert.equal(pickPeriod([{date:'2025-06-30'},{date:'2026-06-30'}],'2025-12-31').date,'2026-06-30');assert.equal(pickPeriod([{date:'2023-01-31'}],'2025-12-31'),null);
- assert.equal(defaultPeers('MCD').name,'Restauración');assert.ok(!defaultPeers('MCD').peers.includes('MCD'));assert.equal(defaultPeers('ZZZZ'),null);
+ assert.equal(defaultGroup('MCD').name,'Restauración');assert.ok(!peersFor(defaultGroup('MCD'),'MCD').includes('MCD'));assert.equal(defaultGroup('ZZZZ'),null);
+ assert.equal(defaultGroup('GOOG').id,'tech');assert.equal(peersFor(groupById('pharma'),'LLY').length,8);
+ assert.equal(pickPeriod([{date:'2025-12-31'}],'2026-09-30').date,'2025-12-31'); // Apple (sep.) frente a Alphabet (dic.): 273 días, dentro de 12 meses
+ const ids=peerGroups.map(g=>g.id);assert.equal(new Set(ids).size,ids.length);assert.equal(peerGroups.length,30);
 });
 const fakeFin=async t=>{const d=peersFx[t];if(!d)throw new Error('Sin datos');return parseFinancials(payload(d,1e6,d.c),t);};
 test('Sector real MCD: comparables con patrimonio negativo no entran en la mediana del ROE',async()=>{
@@ -63,16 +66,17 @@ test('Sector real MCD: comparables con patrimonio negativo no entran en la media
  const roe=r.stats.roe;assert.deepEqual(roe.values.filter(v=>v.value!==null).map(v=>v.ticker).sort(),['CMG','DRI','QSR']); // SBUX, YUM y DPZ excluidos
  assert.equal(roe.n,3);assert.ok(r.stats.fcfYield.n===6);
 });
-test('Sector GOOGL y grupo personalizado con ticker sin datos',async()=>{
- const r=await getPeerComparison('GOOGL','2025-12-31',null,{getFin:fakeFin});assert.equal(r.group.name,'Tecnología y plataformas');assert.ok(r.stats.opMargin.median>0.2*100);
- const c=await getPeerComparison('GOOGL','2025-12-31','meta, msft XXXX googl',{getFin:fakeFin});
- assert.deepEqual(c.peers.map(p=>p.ticker),['META','MSFT']);assert.equal(c.excluded[0].ticker,'XXXX');assert.equal(c.stats.roe.median,null); // solo 2 comparables
- const none=await getPeerComparison('ZZZZ','2025-12-31',null,{getFin:fakeFin});assert.equal(none.group,null);
+test('Sector GOOGL: grupo recomendado, grupo elegido y grupo inexistente',async()=>{
+ const r=await getPeerComparison('GOOGL','2025-12-31',null,{getFin:fakeFin});assert.equal(r.group.name,'Tecnología y plataformas');assert.equal(r.recommended,'tech');assert.ok(r.stats.opMargin.median>20);
+ assert.deepEqual(r.excluded.map(e=>e.ticker).sort(),['CSCO','IBM','PRX.AS']); // sin datos guardados en las pruebas
+ const s=await getPeerComparison('GOOGL','2025-12-31','semis',{getFin:fakeFin});assert.equal(s.group.name,'Semiconductores');assert.equal(s.recommended,'tech');assert.ok(s.peers.some(p=>p.ticker==='NVDA'));
+ await assert.rejects(getPeerComparison('GOOGL','2025-12-31','inventado',{getFin:fakeFin}),e=>e.status===400);
+ const none=await getPeerComparison('ZZZZ','2025-12-31',null,{getFin:fakeFin});assert.equal(none.group,null);assert.match(none.message,/desplegable/);
 });
 test('Sector real Inditex: grupo de moda con ejercicios y monedas distintos',async()=>{
  const fx=read('yahoo_itx_moda_millones.json');const fin=async t=>{const d=fx[t];if(!d)throw new Error('Sin datos');return parseFinancials(payload(d,1e6,d.c),t);};
  const itx=await fin('ITX.MC');assert.equal(itx.periods[0].currency,'EUR');assert.ok(itx.periods[0].ratios.every(r=>r.id==='coverage'||r.value!==null||/Falta/.test(r.reason))); 
  const r=await getPeerComparison('ITX.MC','2026-01-31',null,{getFin:fin});
- assert.equal(r.group.name,'Moda y distribución textil');assert.equal(r.peers.length,6);assert.equal(r.peers.find(p=>p.ticker==='HM-B.ST').currency,'SEK');
+ assert.equal(r.group.name,'Moda y distribución textil');assert.equal(r.peers.length,6);assert.deepEqual(r.excluded.map(e=>e.ticker),['ADS.DE']);assert.equal(r.peers.find(p=>p.ticker==='HM-B.ST').currency,'SEK');
  assert.ok(r.stats.roe.n>=5&&r.stats.roe.median>0);
 });

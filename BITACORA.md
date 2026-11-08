@@ -132,3 +132,12 @@ Publicación: https://carril-cfa-balance.handywood33.chatgpt.site
 - El contacto para la SEC deja de estar en el código y pasa a la variable de entorno `SEC_USER_AGENT`.
 - Repositorio público: github.com/Javil0/carril-abierto. Contiene la web, las pruebas, el prototipo de Streamlit de la primera versión, la propuesta y esta bitácora.
 - 23 pruebas superadas (1 nueva con los datos reales de Inditex y su grupo).
+
+## 08/11/2026 · Comparables: 30 sectores y desplegable
+- Problema detectado en la web publicada (Vercel): muchas empresas no tenían grupo, y Apple solo reunía 2 comparables. Su ejercicio cierra en septiembre y el de Alphabet, Meta o Amazon en diciembre: 273 días de diferencia, más que la ventana de 200 días.
+- Alternativa descartada: las «recomendaciones» de Yahoo. Proponen las empresas que siguen los mismos inversores, no las del mismo sector: para Inditex, Iberdrola, Repsol y ACS; para Coca-Cola, JPMorgan y Disney. Usarlas como comparables sectoriales habría sido un error de concepto.
+- Decisión: 30 grupos definidos por el equipo que cubren el Ibex 35, el Euro Stoxx 50 y grandes cotizadas de EE. UU. Son 247 tickers, comprobados uno a uno en Yahoo el 8/11/2026. Se corrigieron Fiserv (FISV) y Roche (RO.SW), y se excluyó Logista porque Yahoo no tiene su último ejercicio.
+- El usuario elige el grupo en un desplegable, ordenado por áreas. Por defecto se propone el primer grupo que contiene la empresa. Si no está en ninguno, se le pide que elija.
+- La ventana pasa de 200 días a 12 meses: se usa el ejercicio de cada comparable más cercano al de la empresa, y la web muestra su fecha.
+- Se descargan como mucho 8 comparables por consulta. En banca, seguros e inmobiliario se muestra un aviso sobre la lectura de los ratios.
+- 24 pruebas superadas.

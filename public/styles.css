@@ -84,3 +84,5 @@
 @media(max-width:600px){.nav-pill{font-size:12px;padding:10px 13px;gap:6px}.nav-pill span{font-size:15px}.main-nav{gap:6px}.analysis-top{flex-wrap:wrap;row-gap:12px}.back-link{font-size:14px;white-space:nowrap}.fictitious-pill{display:none}.period-control{margin-left:auto}}
 /* Tabla de ratios +1 px · 08/11/2026 */
 .ratio-table th{font-size:11px}.ratio-table .ratio-name{font-size:14px}.ratio-category{font-size:11px}.ratio-table td:nth-child(2),.ratio-table td:nth-child(3),.sector-value{font-size:16px}.pos-chip{font-size:10px}.ratio-table td:nth-child(5){font-size:13px}
+.peer-select{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#7f8b72;flex:0 1 300px}.peer-select select{border:1px solid #d6ded1;border-radius:20px;padding:9px 14px;font-size:13px;background:#fff;color:var(--ink);max-width:100%}
+@media(max-width:950px){.peer-select{flex-basis:100%}}
