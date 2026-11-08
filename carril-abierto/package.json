@@ -1,0 +1,12 @@
+{
+  "name": "carril-abierto",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ratios financieros por ticker con contraste frente al 10-K de la SEC y comparación sectorial.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "dev": "npx vercel dev"
+  }
+}
