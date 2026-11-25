@@ -61,9 +61,10 @@ export function dupontAnalysis(current,previous){
 }
 export function altmanAnalysis(current){
  const c=current.values;
- const terms=[{label:'Capital circulante / activo',weight:1.2,num:sum(c.currentAssets,finite(c.currentLiabilities)?-c.currentLiabilities:null),den:c.assets},{label:'Beneficios retenidos / activo',weight:1.4,num:c.retained,den:c.assets},{label:'EBIT / activo',weight:3.3,num:c.ebit,den:c.assets},{label:'Capitalización histórica / pasivo total',weight:.6,num:c.marketEquity,den:c.liabilities},{label:'Ingresos / activo',weight:1,num:c.revenue,den:c.assets}].map(t=>({...t,value:finite(t.num)&&finite(t.den)&&t.den>0?t.num/t.den:null}));
- const incomplete=terms.filter(t=>t.value===null).map(t=>t.label);
- if(incomplete.length)return {value:null,zone:null,terms,reason:'Faltan datos del mismo periodo: '+incomplete.join(', ')+'.'};
+ const terms=[{label:'Capital circulante / activo',weight:1.2,num:sum(c.currentAssets,finite(c.currentLiabilities)?-c.currentLiabilities:null),den:c.assets,inputs:['currentAssets','currentLiabilities','assets']},{label:'Beneficios retenidos / activo',weight:1.4,num:c.retained,den:c.assets,inputs:['retained','assets']},{label:'EBIT / activo',weight:3.3,num:c.ebit,den:c.assets,inputs:['ebit','assets']},{label:'Capitalización histórica / pasivo total',weight:.6,num:c.marketEquity,den:c.liabilities,inputs:['marketEquity','liabilities']},{label:'Ingresos / activo',weight:1,num:c.revenue,den:c.assets,inputs:['revenue','assets']}].map(t=>({...t,value:finite(t.num)&&finite(t.den)&&t.den>0?t.num/t.den:null,missing:t.inputs.filter(k=>!finite(c[k])).map(k=>fieldLabels[k].toLowerCase())}));
+ const incomplete=terms.filter(t=>t.value===null);
+ // Se nombran las partidas que faltan, no el cociente: así se ve que, por ejemplo, el activo sí está y lo que falta es el circulante.
+ if(incomplete.length){const missing=[...new Set(incomplete.flatMap(t=>t.missing))];const list=a=>a.length>1?a.slice(0,-1).join(', ')+' y '+a[a.length-1]:a[0];return {value:null,zone:null,terms,reason:missing.length?(missing.length>1?'Faltan ':'Falta ')+list(missing.map(x=>'el '+x))+' del mismo periodo, así que no se puede calcular '+list(incomplete.map(t=>t.label.toLowerCase()))+'.'+(missing.includes('activo corriente')||missing.includes('pasivo corriente')?' Los bancos y las aseguradoras no separan el balance en corriente y no corriente, así que no tienen capital circulante.':''):'Algún denominador es cero o negativo: '+incomplete.map(t=>t.label).join(', ')+'.'};}
  const value=terms.reduce((s,t)=>s+t.weight*t.value,0);
  return {value,zone:value>2.99?'Zona segura (modelo)':value>=1.81?'Zona gris':'Mayor riesgo (modelo)',terms,reason:null};
 }

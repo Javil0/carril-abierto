@@ -1,5 +1,9 @@
 // Pestaña «Valoración DCF»: supuestos editables, construcción de la beta, proyección y sensibilidad. El recálculo es local, sin llamadas al servidor.
 import { DAMODARAN } from './damodaran.mjs';
+import { industryEs } from './industries-es.mjs';
+// Nombre en español con el original de Damodaran entre paréntesis, para poder localizar la fila en su tabla.
+const indLabel=n=>industryEs(n)===n?n:industryEs(n)+' · '+n;
+const indOptions=(region,selected)=>industryNames(region).map(n=>[industryEs(n),n]).sort((a,b)=>a[0].localeCompare(b[0],'es')).map(([es,n])=>`<option value="${esc(n)}"${n===selected?' selected':''}>${esc(es)}</option>`).join('');
 import { historicalInputs, defaultAssumptions, runDcf, companyProfile, industryRow, industryNames, countryRisk, TV_WARNING_SHARE } from './dcf.mjs';
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -56,13 +60,13 @@ export function createDcfView(ctx){
    case 'rf':{const rf=state.market?.riskFree;if(state.marketLoading)return 'Descargando…';if(state.marketError)return 'Pendiente: '+state.marketError;return rf?.rate!=null?esc(rf.source)+' · '+rf.date+' · <a href="'+esc(rf.url)+'" target="_blank" rel="noopener noreferrer">fuente ↗</a>':'Pendiente: '+esc(rf?.reason||'sin dato');}
    case 'erp':return 'Damodaran · ERP implícita de un mercado maduro (país Aaa), '+DAMODARAN.updated+' · <a href="'+DAMODARAN.erp.source+'" target="_blank" rel="noopener noreferrer">fuente ↗</a>';
    case 'crp':return 'Damodaran · prima de '+esc(countryEs(m.prof.country))+' (país de la sede, no de las ventas)'+(countryRisk(m.prof.country)===null?' · sin dato: 0 %':'');
-   case 'betaU':return ind?'Damodaran · '+esc(ind.name)+' ('+REGION_LABEL[ind.region]+', '+ind.firms+' empresas)':'Pendiente: elige una industria.';
+   case 'betaU':return ind?'Damodaran · '+esc(indLabel(ind.name))+' ('+REGION_LABEL[ind.region]+', '+ind.firms+' empresas)':'Pendiente: elige una industria.';
    case 'de':return finite(d.de)?'Deuda financiera '+mill(h.base.debt)+' M / '+(d.equityValueSource==='price'?'cotización × acciones':'capitalización al cierre')+' '+mill(d.equityValueSource==='price'?state.market.quote.price*h.base.shares:h.base.marketEquity)+' M':'Pendiente: falta la deuda o la capitalización.';
    case 'relevTax':return 'Tipo marginal con el que Damodaran desapalancó la tabla '+REGION_LABEL[m.prof.region]+': así ida y vuelta son coherentes.';
    case 'betaOverride':return 'Vacío = se usa la beta reapalancada. Escribe una beta para sustituirla (p. ej., una regresión propia).';
    case 'kd':return 'Histórico · '+histNote(h.kd);
    case 'terminalGrowth':return 'Por defecto 2 %, cerca de la inflación a largo plazo. Tiene que ser menor que el WACC y no debería superar el tipo libre de riesgo.';
-   case 'exitMultiple':return finite(ind?.evEbitda)?'Damodaran · EV/EBITDA medio de «'+esc(ind.name)+'» ('+REGION_LABEL[ind.region]+', empresas con EBITDA positivo)':'Pendiente: no hay múltiplo para esta industria. Introdúcelo.';
+   case 'exitMultiple':return finite(ind?.evEbitda)?'Damodaran · EV/EBITDA medio de «'+esc(indLabel(ind.name))+'» ('+REGION_LABEL[ind.region]+', empresas con EBITDA positivo)':'Pendiente: no hay múltiplo para esta industria. Introdúcelo.';
    case 'waccDirect':return 'Escribe el WACC que quieras usar. La beta y el CAPM dejan de intervenir.';
   }
   return '';
@@ -74,10 +78,10 @@ export function createDcfView(ctx){
  }
  function betaNotice(m){
   const a=m.assumptions,w=m.result.wacc,ind=m.prof.industry?industryRow(m.prof.region,m.prof.industry):null,t=report().ticker;
-  const origin=m.prof.source==='damodaran'?'Damodaran clasifica a '+esc(t)+' en «'+esc(m.prof.industry)+'».':m.prof.source==='group'?'Damodaran no clasifica a '+esc(t)+': se usa la industria más frecuente de su grupo de comparables («'+esc(m.prof.industry)+'»).':m.prof.source==='user'?'Industria y tabla elegidas por el usuario.':'No hay industria asignada: elige una en el desplegable.';
+  const origin=m.prof.source==='damodaran'?'Damodaran clasifica a '+esc(t)+' en «'+esc(indLabel(m.prof.industry))+'».':m.prof.source==='group'?'Damodaran no clasifica a '+esc(t)+': se usa la industria más frecuente de su grupo de comparables («'+esc(indLabel(m.prof.industry))+'»).':m.prof.source==='user'?'Industria y tabla elegidas por el usuario.':'No hay industria asignada: elige una en el desplegable.';
   const formula=finite(a.betaOverride)?'Beta introducida por el usuario: <strong>'+num(a.betaOverride,3)+'</strong>. No se reapalanca.':finite(w.betaL)?`βL = βU × [1 + (1 − t) × D/E] = ${num(a.betaU,3)} × [1 + (1 − ${pct(a.relevTax,2)}) × ${num(a.de,3)}] = <strong>${num(w.betaL,3)}</strong>`:'Falta la beta desapalancada o la D/E.';
   return `<section class="dcf-beta"><div class="section-heading"><div><span class="eyebrow">CÓMO SE CONSTRUYE LA BETA</span><h2>Una beta estimada, no observada.</h2></div><span class="small-tag">Damodaran · ${DAMODARAN.updated}</span></div>
-  <div class="dcf-pickers"><label class="peer-select"><span>Tabla de Damodaran</span><select id="dcfRegion">${Object.keys(DAMODARAN.regions).map(r=>`<option value="${r}"${r===m.prof.region?' selected':''}>${REGION_LABEL[r]}</option>`).join('')}</select></label><label class="peer-select"><span>Industria</span><select id="dcfIndustry"><option value="">Elige una industria…</option>${industryNames(m.prof.region).map(n=>`<option${n===m.prof.industry?' selected':''}>${esc(n)}</option>`).join('')}</select></label></div>
+  <div class="dcf-pickers"><label class="peer-select"><span>Tabla de Damodaran</span><select id="dcfRegion">${Object.keys(DAMODARAN.regions).map(r=>`<option value="${r}"${r===m.prof.region?' selected':''}>${REGION_LABEL[r]}</option>`).join('')}</select></label><label class="peer-select"><span>Industria</span><select id="dcfIndustry"><option value="">Elige una industria…</option>${indOptions(m.prof.region,m.prof.industry)}</select></label></div>
   <div class="formula-box">${formula}</div>
   <p class="detail-note">${origin} ${ind?`Se parte de su beta desapalancada media (${num(ind.betaU,3)}; ${ind.firms} empresas de la tabla ${REGION_LABEL[ind.region]}) y se reapalanca con la estructura de capital de ${esc(t)} a valor de mercado.`:''}</p>
   <p class="dcf-caveat"><b>Aviso.</b> Esta beta supone que ${esc(t)} tiene el riesgo de negocio medio de su industria y que mantendrá su endeudamiento actual. No sale de una regresión de sus cotizaciones, así que puede diferir de la beta que publican otros proveedores. Úsala como punto de partida y cámbiala si tienes una estimación mejor.</p>
@@ -127,7 +131,7 @@ export function createDcfView(ctx){
  function blockedView(m){
   const t=esc(report().ticker),q=state.market?.quote;
   return `<section class="dcf-blocked"><span class="eyebrow">MODELO NO APLICABLE</span><h2>El DCF por FCFF no sirve para valorar ${t}.</h2>
-  <p class="dcf-blocked-lead">Damodaran clasifica a ${t} en «${esc(m.prof.industry)}». En bancos, aseguradoras y gestoras, la web no calcula un DCF: el resultado sería una cifra sin significado económico.</p>
+  <p class="dcf-blocked-lead">Damodaran clasifica a ${t} en «${esc(indLabel(m.prof.industry))}». En bancos, aseguradoras y gestoras, la web no calcula un DCF: el resultado sería una cifra sin significado económico.</p>
   <div class="dcf-blocked-grid">
    <div><h3>Por qué no se aplica</h3><ul>
     <li><b>La deuda es su materia prima.</b> Un banco capta depósitos y emite deuda para prestar. No se puede separar la «financiación» de la «operación», así que el WACC y el flujo libre para la empresa pierden su sentido.</li>
@@ -140,7 +144,7 @@ export function createDcfView(ctx){
   </div>
   ${q?`<p class="dcf-blocked-quote">Cotización actual: <b>${num(q.price,2)} ${esc(q.currency)}</b> · Yahoo · ${q.time?new Date(q.time).toLocaleString('es-ES'):''}</p>`:''}
   <div class="dcf-blocked-override"><p><b>¿La clasificación no encaja?</b> Si la empresa no es una entidad financiera (por ejemplo, una empresa de pagos), elige otra industria y el DCF se calculará con ella.</p>
-   <div class="dcf-pickers"><label class="peer-select"><span>Tabla de Damodaran</span><select id="dcfRegion">${Object.keys(DAMODARAN.regions).map(x=>`<option value="${x}"${x===m.prof.region?' selected':''}>${REGION_LABEL[x]}</option>`).join('')}</select></label><label class="peer-select"><span>Industria</span><select id="dcfIndustry"><option value="">Elige una industria…</option>${industryNames(m.prof.region).map(n=>`<option${n===m.prof.industry?' selected':''}>${esc(n)}</option>`).join('')}</select></label></div></div>
+   <div class="dcf-pickers"><label class="peer-select"><span>Tabla de Damodaran</span><select id="dcfRegion">${Object.keys(DAMODARAN.regions).map(x=>`<option value="${x}"${x===m.prof.region?' selected':''}>${REGION_LABEL[x]}</option>`).join('')}</select></label><label class="peer-select"><span>Industria</span><select id="dcfIndustry"><option value="">Elige una industria…</option>${indOptions(m.prof.region,m.prof.industry)}</select></label></div></div>
   </section>`;
  }
  function render(){
