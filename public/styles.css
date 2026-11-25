@@ -269,3 +269,17 @@
  .peer-select{flex:1 1 100%!important;min-width:0}
  .peer-select select{width:100%;min-width:0}
 }
+/* DCF no aplicable (banca y seguros) */
+.dcf-blocked{border:1px solid var(--line);border-radius:14px;background:#fcfdf8;padding:26px 28px}
+.dcf-blocked h2{font-size:26px;font-weight:400;letter-spacing:-.8px;margin-top:8px}
+.dcf-blocked-lead{font-size:15px;color:var(--t2);line-height:1.7;margin-top:12px;max-width:900px}
+.dcf-blocked-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:22px}
+.dcf-blocked h3{font-size:15px;font-weight:600;color:#33401f;margin-bottom:8px}
+.dcf-blocked ul{margin:0;padding-left:18px}
+.dcf-blocked li,.dcf-blocked-grid p{font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:8px}
+.dcf-blocked b{color:#2f3a27;font-weight:600}
+.dcf-blocked .formula-box small{display:block;font-size:13px;color:var(--tg)}
+.dcf-blocked-quote{font-size:14px;color:var(--t2);margin-top:14px}
+.dcf-blocked-override{margin-top:20px;border-top:1px solid var(--line);padding-top:16px}
+.dcf-blocked-override p{font-size:14px;color:var(--t2)}
+@media(max-width:950px){.dcf-blocked-grid{grid-template-columns:1fr}.dcf-blocked{padding:18px}.dcf-blocked h2{font-size:22px}}

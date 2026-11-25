@@ -123,11 +123,32 @@ export function createDcfView(ctx){
   const fmtCell=v=>finite(v)?(s.metric==='perShare'?num(v,2):mill(v)):'—';
   return `<section class="dcf-block"><div class="section-heading"><div><h2>Cuánto cambia si cambian los supuestos.</h2><p>${label}. Filas: WACC. Columnas: ${g?'crecimiento a perpetuidad':'múltiplo EV/EBITDA de salida'}. En el centro, el caso base.</p></div></div><div class="table-scroll"><table class="raw-table dcf-sens"><thead><tr><th>WACC \\ ${g?'g∞':'EV/EBITDA'}</th>${s.xs.map(x=>`<th>${g?pct(x,1):num(x,1)+'×'}</th>`).join('')}</tr></thead><tbody>${s.waccs.map((w,i)=>`<tr><td>${pct(w,2)}</td>${s.cells[i].map((v,j)=>`<td class="${i===2&&j===2?'center':''}">${fmtCell(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><p class="panel-foot">«—»: combinación sin solución (por ejemplo, g ≥ WACC).</p></section>`;
  }
+ // Banca y seguros: no se muestran supuestos ni resultados de un modelo que no se aplica; solo el motivo y la alternativa.
+ function blockedView(m){
+  const t=esc(report().ticker),q=state.market?.quote;
+  return `<section class="dcf-blocked"><span class="eyebrow">MODELO NO APLICABLE</span><h2>El DCF por FCFF no sirve para valorar ${t}.</h2>
+  <p class="dcf-blocked-lead">Damodaran clasifica a ${t} en «${esc(m.prof.industry)}». En bancos, aseguradoras y gestoras, la web no calcula un DCF: el resultado sería una cifra sin significado económico.</p>
+  <div class="dcf-blocked-grid">
+   <div><h3>Por qué no se aplica</h3><ul>
+    <li><b>La deuda es su materia prima.</b> Un banco capta depósitos y emite deuda para prestar. No se puede separar la «financiación» de la «operación», así que el WACC y el flujo libre para la empresa pierden su sentido.</li>
+    <li><b>Las partidas no significan lo mismo.</b> Yahoo presenta la cuenta de un banco en otro formato: lo que aparecería como «margen EBIT» o «inversión en circulante» no mide lo mismo que en una empresa industrial.</li>
+    <li><b>El capital lo fija el regulador.</b> Lo que limita a un banco es su capital regulatorio (CET1), no el capex ni el circulante.</li>
+   </ul></div>
+   <div><h3>Qué modelo se usa en su lugar</h3><p>Se valora el patrimonio directamente, descontando al coste del capital propio (Ke):</p>
+    <div class="formula-box">P/VC justo = (ROE − g) / (Ke − g)<br><small>Exceso de rentabilidad sobre el patrimonio. Una alternativa es descontar los dividendos.</small></div>
+    <p>Si el banco gana más que su coste del capital (ROE &gt; Ke), vale más que su valor contable. Este modelo no está incluido en la web.</p></div>
+  </div>
+  ${q?`<p class="dcf-blocked-quote">Cotización actual: <b>${num(q.price,2)} ${esc(q.currency)}</b> · Yahoo · ${q.time?new Date(q.time).toLocaleString('es-ES'):''}</p>`:''}
+  <div class="dcf-blocked-override"><p><b>¿La clasificación no encaja?</b> Si la empresa no es una entidad financiera (por ejemplo, una empresa de pagos), elige otra industria y el DCF se calculará con ella.</p>
+   <div class="dcf-pickers"><label class="peer-select"><span>Tabla de Damodaran</span><select id="dcfRegion">${Object.keys(DAMODARAN.regions).map(x=>`<option value="${x}"${x===m.prof.region?' selected':''}>${REGION_LABEL[x]}</option>`).join('')}</select></label><label class="peer-select"><span>Industria</span><select id="dcfIndustry"><option value="">Elige una industria…</option>${industryNames(m.prof.region).map(n=>`<option${n===m.prof.industry?' selected':''}>${esc(n)}</option>`).join('')}</select></label></div></div>
+  </section>`;
+ }
  function render(){
   if(!report()||!period()||!sync())return;const m=model(),panel=$('dcfContent');
   if(!m){panel.innerHTML='<p class="pending-note">No hay datos suficientes para este ejercicio.</p>';return;}
   const r=m.result,a=m.assumptions;
-  const alerts=[...r.blocks.map(b=>['block',b]),...(r.errors||[]).map(e=>['error',e]),...r.warnings.map(w=>['warn',w])];
+  if(r.blocks.length){panel.innerHTML=blockedView(m);bind();return;}
+  const alerts=[...(r.errors||[]).map(e=>['error',e]),...r.warnings.map(w=>['warn',w])];
   const tv=`<div class="dcf-group"><h3>Valor terminal</h3><div class="dcf-field"><label for="dcf-tvMethod">Método</label><select id="dcf-tvMethod" data-key="tvMethod"><option value="gordon"${a.tvMethod==='gordon'?' selected':''}>Crecimiento a perpetuidad (Gordon)</option><option value="multiple"${a.tvMethod==='multiple'?' selected':''}>Múltiplo EV/EBITDA de salida</option></select></div>
    ${a.tvMethod==='gordon'?field(['terminalGrowth','Crecimiento a perpetuidad (g∞)','pct'],m):field(['exitMultiple','Múltiplo EV/EBITDA de salida','num'],m)}
    <label class="dcf-check"><input type="checkbox" id="dcf-midYear" data-key="midYear"${a.midYear?' checked':''}> Convención de mitad de año (los flujos llegan, de media, a mitad de ejercicio)</label></div>`;
