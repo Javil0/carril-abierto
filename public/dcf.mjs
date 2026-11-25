@@ -2,6 +2,7 @@
 // FCFF = EBIT × (1 − t) + amortizaciones − capex − Δ capital circulante. Descuento al WACC; valor terminal por Gordon o por múltiplo.
 import { DAMODARAN } from './damodaran.mjs';
 const finite=n=>typeof n==='number'&&Number.isFinite(n);
+const pc=x=>(x*100).toFixed(2).replace('.',',')+' %';
 const avg=a=>{const v=a.filter(finite);return v.length?v.reduce((x,y)=>x+y,0)/v.length:null;};
 export const HISTORY_YEARS=3;           // Ejercicios usados para las medias históricas.
 export const TV_WARNING_SHARE=0.75;     // Aviso si el valor terminal pesa más del 75 % del valor de empresa.
@@ -95,7 +96,7 @@ export function valuation(base,a,wacc){
  for(const[k,label]of required)if(!finite(a[k]))errors.push('Falta el supuesto de '+label+'.');
  const n=Math.round(a.years);if(!(n>=1&&n<=15))errors.push('El horizonte debe estar entre 1 y 15 años.');
  if(!finite(wacc))errors.push('Falta el WACC.');else if(wacc<=0)errors.push('El WACC debe ser positivo.');
- if(a.tvMethod==='gordon'){if(!finite(a.terminalGrowth))errors.push('Falta el crecimiento a perpetuidad.');else if(finite(wacc)&&a.terminalGrowth>=wacc)errors.push('El crecimiento a perpetuidad ('+(a.terminalGrowth*100).toFixed(2)+' %) debe ser menor que el WACC ('+(wacc*100).toFixed(2)+' %): con g ≥ WACC el modelo de Gordon no tiene solución finita.');}
+ if(a.tvMethod==='gordon'){if(!finite(a.terminalGrowth))errors.push('Falta el crecimiento a perpetuidad.');else if(finite(wacc)&&a.terminalGrowth>=wacc)errors.push('El crecimiento a perpetuidad ('+pc(a.terminalGrowth)+') debe ser menor que el WACC ('+pc(wacc)+'): con g ≥ WACC el modelo de Gordon no tiene solución finita.');}
  else if(!finite(a.exitMultiple)||a.exitMultiple<=0)errors.push('Falta un múltiplo EV/EBITDA de salida positivo.');
  if(errors.length)return {errors,warnings,rows:[]};
  const rows=[];let rev=base.revenue;
@@ -141,10 +142,11 @@ export function runDcf({hist,profile,assumptions,market={},currency}){
  if(profile?.industry&&FINANCIAL_INDUSTRIES.includes(profile.industry))blocks.push('Banca, seguros y gestoras: la deuda y los depósitos son parte del negocio, así que el FCFF y el WACC no tienen sentido. Para estas empresas se usa un modelo de dividendos o de exceso de rentabilidad sobre el patrimonio.');
  const w=computeWacc(assumptions);
  const result=blocks.length?{errors:[],warnings:[],rows:[]}:valuation(hist.base,assumptions,w.wacc);
- if(!blocks.length&&w.missing.length)result.errors.unshift('Para calcular el WACC falta: '+w.missing.join(', ')+'.');
+ if(!blocks.length&&w.missing.length){result.errors=result.errors.filter(e=>e!=='Falta el WACC.');result.errors.unshift('Para calcular el WACC falta: '+w.missing.join(', ')+'.');}
  const warnings=[...result.warnings];
  if(profile?.industry&&REIT_INDUSTRIES.includes(profile.industry))warnings.push('Inmobiliarias: el capex incluye compras de inmuebles y el FCFF varía mucho de un año a otro. Lee el resultado con cautela.');
  if(finite(assumptions.terminalGrowth)&&finite(assumptions.rf)&&assumptions.tvMethod==='gordon'&&assumptions.terminalGrowth>assumptions.rf)warnings.push('El crecimiento a perpetuidad supera al tipo libre de riesgo: a largo plazo, ninguna empresa puede crecer más que la economía.');
+ if(assumptions.waccMode!=='direct'&&finite(assumptions.kd)&&finite(assumptions.rf)&&assumptions.kd<assumptions.rf&&finite(assumptions.de)&&assumptions.de>0)warnings.push('El coste de la deuda ('+pc(assumptions.kd)+') es menor que el tipo libre de riesgo: el histórico refleja deuda emitida cuando los tipos eran más bajos. Para el WACC conviene el coste al que se endeudaría hoy (tipo libre de riesgo + diferencial).');
  const comparable=market.priceCurrency===currency&&finite(market.price);
  if(finite(market.price)&&!comparable)warnings.push('La acción cotiza en '+market.priceCurrency+' y las cuentas están en '+currency+': el valor por acción no se compara con la cotización (no se convierte la divisa).');
  const upside=comparable&&finite(result.perShare)&&market.price>0?result.perShare/market.price-1:null;
