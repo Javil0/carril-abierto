@@ -140,20 +140,32 @@
 
 > **Herramientas.** Las primeras versiones de la web se hicieron con ChatGPT/Codex. Las mejoras de noviembre (flujo de caja, casos límite, verificación con la SEC, comparables y DCF) se hicieron con Claude. Los tres casos son de esta última fase.
 
-### Caso 1 · Tickers que no correspondían a la empresa o que no tenían datos
+### Caso 1 · Agrupó a Inditex por índice bursátil y no por sector
 
-- **Qué nos dijo.** Al montar los 30 grupos de comparables, la IA propuso «FI» como ticker de Fiserv y «ROG.SW» para Roche, e incluyó a Logista en su grupo. Los presentó como tickers válidos de Yahoo Finance, sin ninguna advertencia.
-- **Cómo lo detectamos.** Antes de publicar comprobamos uno a uno los 248 tickers propuestos. Para Fiserv y Roche, Yahoo no devolvía estados financieros con esos tickers. Logista existía, pero Yahoo no tenía su último ejercicio, así que habría quedado fuera de cualquier mediana sin que nadie lo notara.
-- **Fuente primaria.** *[A confirmar: la bolsa en la que cotiza cada empresa, Nasdaq para Fiserv y SIX Swiss Exchange para Roche, o la ficha de la empresa en Yahoo Finance.]* Fiserv cotiza como «FISV» y Roche como «RO.SW».
-- **Por qué importa.** Un ticker erróneo hace que un comparable desaparezca sin avisar o, peor, que en la mediana entren datos de otra cotización.
-- **Corrección.** Fiserv pasó a «FISV» y Roche a «RO.SW», y Logista quedó excluida. Quedan 247 tickers, y la web muestra qué comparables no tienen datos.
-
-### Caso 2 · Agrupó a Inditex por índice bursátil y no por sector
-
-- **Qué nos dijo.** En el primer reparto de comparables (14 grupos), la IA metió a Inditex en un grupo del Ibex junto a Repsol, Aena y Telefónica. La mediana «sectorial» de Inditex se calculaba frente a una petrolera, un gestor aeroportuario y una teleco.
-- **Cómo lo detectamos.** Inditex era el ejemplo de la portada. Su rotación de inventarios y su margen se comparaban con empresas que casi no tienen inventario o cuyos márgenes responden a una estructura de costes distinta. Las posiciones «por encima» o «por debajo del rango» no tenían ningún sentido.
+- **Qué nos dijo.** En el primer reparto de comparables (14 grupos), la IA metió a Inditex en un grupo del Ibex junto a Repsol, Aena y Telefónica, y lo presentó como su grupo sectorial. La mediana «del sector» de Inditex se calculaba frente a una petrolera, un gestor aeroportuario y una teleco.
+- **Cómo lo detectamos.** Probando distintos tickers para comprobar que todo funcionaba. Al revisar Inditex vimos que su rotación de inventarios y su margen se comparaban con empresas que casi no tienen inventario o cuyos márgenes responden a una estructura de costes distinta. Las etiquetas «por encima» o «por debajo del rango» no tenían ningún sentido.
 - **Fuente primaria.** Las cuentas anuales de Inditex depositadas en la CNMV, que describen su actividad como diseño, fabricación y distribución minorista de moda.
-- **Corrección.** Se creó el grupo «Moda y distribución textil» con H&M, TJX, Ross, Gap, Lululemon, Nike y Adidas. Como los ratios no tienen unidades, se pueden comparar aunque H&M presente sus cuentas en coronas suecas. A raíz de este caso revisamos el resto de grupos con el mismo criterio: actividad, no índice.
+- **Corrección.** Se creó el grupo «Moda y distribución textil» con H&M, TJX, Ross, Gap, Lululemon, Nike y Adidas. Como los ratios no tienen unidades, se pueden comparar aunque H&M presente sus cuentas en coronas suecas.
+
+### Caso 2 · Dio por inexistentes datos que Yahoo sí tiene
+
+- **Qué nos dijo.** El código que escribió la IA interpretaba «la serie me llega vacía» como «el dato no existe» y dejaba el ratio «Pendiente». Lo dio por correcto porque las pruebas pasaban. Así, en la web publicada:
+  - Iberdrola aparecía sin EBIT.
+  - ASML aparecía sin flujo de caja operativo.
+  - Varios ratios quedaban pendientes sin motivo real.
+- **Cómo lo detectamos.** Comparando empresa a empresa la web publicada con Yahoo Finance abierto en el navegador. Las partidas que la web daba por inexistentes sí aparecían en Yahoo.
+  - **La causa:** Yahoo responde distinto según desde dónde se le consulte. Al servidor de Vercel (en Washington) le llegaban vacías series que desde el navegador sí aparecen, con la misma petición.
+  - **Por qué no lo vimos antes:** las pruebas usaban datos descargados desde el navegador, así que nunca reproducían lo que recibía el servidor.
+- **Fuente primaria.** Los estados financieros de cada empresa tal como los publica Yahoo Finance (balance, resultados y flujos de caja), consultados desde el navegador. Sirvieron para confirmar que los datos existían y para comprobar las fórmulas de reconstrucción.
+- **Corrección.**
+  - Cuando falta una partida, la web la calcula con otras del mismo ejercicio y la misma moneda:
+    - EBIT = resultado antes de impuestos + gasto por intereses;
+    - flujo operativo = flujo de caja libre + capex;
+    - EBITDA = EBIT + amortizaciones.
+  - La partida reconstruida se marca como «derivada» en «Datos brutos», con su fórmula.
+  - Nunca sustituye una cifra publicada ni mezcla monedas.
+  - Comprobamos las fórmulas con datos reales: el EBIT reconstruido coincide exactamente con el de Yahoo en Iberdrola, Inditex, McDonald's, Repsol y Telefónica, y el EBITDA de Iberdrola (10.270 + 6.493 = 16.763 M€) coincide con el publicado.
+  - Se añadió una prueba con estas cifras.
 
 ### Caso 3 · Propuso que el usuario introdujera la beta a mano
 
