@@ -133,3 +133,139 @@
 .dcf-table td:first-child,.dcf-sens td:first-child{min-width:190px!important}
 .dcf-table td,.dcf-sens td{font-size:12px!important}
 @media(max-width:600px){.tabs{overflow-x:auto;justify-content:flex-start;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}}
+
+/* ==========================================================================
+   Capa de legibilidad (auditoría 25/11/2026)
+   Mínimo 12 px en cualquier texto y 13 px en notas; grises con contraste ≥ 4,5:1
+   sobre todos los fondos de la web (WCAG AA). Va al final para prevalecer sobre
+   las reglas anteriores, también sobre las de móvil.
+   ========================================================================== */
+:root{--t2:#4f5a48;--t3:#5b6553;--tg:#4e6236;--tw:#6b4f14}
+/* Etiquetas en mayúsculas y pequeñas marcas */
+.eyebrow,.advanced-grid .eyebrow,#detailLabel{font-size:12px!important;letter-spacing:1.2px;color:var(--t3)}
+.small-tag,.advanced-grid .small-tag{font-size:12px!important;color:var(--t3);border-color:#cfd8c2}
+.mock-label,.preview-top>span,.preview-top>span:first-child,.preview-chart-head span,.fictitious-pill{font-size:12px!important;color:var(--t3)}
+.lime-tag,.preview-top .lime-tag,.z-headline .lime-tag,.balance-intro .lime-tag{font-size:12px!important;color:#33401f}
+.tabs button span{font-size:12px!important;color:var(--tg)}
+/* Pestañas y navegación */
+.tabs button{font-size:14px!important;color:var(--t3)}
+.tabs button[aria-selected=true]{color:#1b2217}
+.back-link,.period-control,.period-control label{font-size:14px!important;color:var(--t2)}
+.units-note,.units-note span{font-size:12px!important;color:var(--t3)}
+/* Portada */
+.home-copy h1 span{color:#737c6a}
+.preview-heading span{color:#737c6a}
+.intro,.ticker-form label,.demo-notice,.demo-notice p,.suggestions,.suggestions>span,.suggestions small,.home-bottom p,.step-number,.preview-kpis small,.preview-foot,.preview-link{color:var(--t3)!important}
+.suggestions button{font-size:13px!important;color:var(--t2);min-height:40px}
+.suggestions small{font-size:12px!important}
+.mini-bars span{font-size:12px!important;color:var(--t3)}
+.footer,.footer span,.footer i{font-size:12px!important;color:var(--t3)}
+/* Cabecera del análisis y KPI */
+.analysis-title>p,#reportSource,#reportSource span,#reportSource a{color:var(--t2)}
+.kpi label{font-size:13px!important;color:var(--t2)}
+.kpi .delta,.dcf-kpis .kpi .delta{font-size:12px!important;color:var(--t3)}
+/* Gráfico y financiación */
+.section-heading p,.chart-panel .section-heading p,.ratios-section .section-heading p{font-size:13px!important;color:var(--t3)}
+.legend,.legend span{font-size:12px!important;color:var(--t3)}
+.axis span,.chart-group>span,.z-labels span{font-size:12px!important;color:var(--t3)}
+.donut span{font-size:12px;color:var(--t3)}
+.funding-legend>div,.funding-legend b{font-size:13px!important}
+.panel-foot,.funding-panel .panel-foot{font-size:13px!important;color:var(--t3)}
+/* Tabla de ratios */
+.filters button{font-size:13px!important;color:var(--t2);min-height:36px}
+.filters button.active{color:#2f3d24}
+.ratio-table th,.raw-table th,.balance-table th{font-size:12px!important;color:var(--t3)}
+.ratio-table .ratio-name{font-size:14px!important}
+.ratio-category{font-size:12px!important;color:var(--t3)}
+.ratio-table td:nth-child(3){color:var(--t3)}
+.ratio-table td:nth-child(4){color:var(--t2)}
+.ratio-table td:nth-child(5){font-size:13px;color:var(--t2)}
+.pending-note{font-size:13px!important;color:var(--tw)}
+.pos-chip{font-size:12px!important}
+.muted-cell{color:var(--t3)}
+.peer-select,.peer-select>span,#peerStatus{font-size:13px!important;color:var(--t2)}
+/* DuPont y Altman */
+.dupont-factor small{font-size:12px!important;color:var(--tg)}
+.operator{color:#6f8456}
+.underlined-button{font-size:13px!important;color:var(--tg)}
+.analysis-disclaimer,.analysis-disclaimer p,.analysis-disclaimer>span{font-size:13px!important;color:var(--t3)}
+/* Balance y datos brutos */
+.balance-table td{font-size:13px!important}
+.balance-table .indent{color:var(--t2)}
+.balance-note{font-size:13px!important;color:var(--t3)}
+.balance-intro p,.raw-intro p{font-size:14px!important;color:var(--t2)}
+.source-banner strong{font-size:14px!important}
+.source-banner p,#rawSourceNote{font-size:13px!important;color:var(--t3)}
+.source-mark{color:var(--tg)}
+.raw-table td{font-size:13px!important}
+.raw-table code{font-size:12px!important;color:var(--t3)}
+.raw-table td:nth-child(4){color:var(--t3)}
+.raw-table td:last-child{font-size:12px!important;color:var(--tg)}
+.raw-search span{color:var(--t3)}
+.raw-search input{font-size:14px!important}
+/* Verificación SEC */
+.sec-chip{font-size:12px!important}
+.sec-chip.muted{color:#565d50}
+.sec-note{font-size:12px!important;color:var(--t3)}
+.sec-status{color:var(--t2)}
+/* Diálogos */
+.detail-note,.method-list,.method-list p{font-size:14px!important;color:var(--t2)}
+.method-list strong{color:#33461f}
+.detail-data td small{font-size:12px;color:var(--t3)}
+.detail-foot{font-size:12px!important;color:var(--t3)}
+/* DCF */
+.dcf-source,.dcf-source a{font-size:12px!important;color:var(--t3)}
+.dcf-field label small{font-size:12px;color:var(--t3)}
+.dcf-beta .detail-note{font-size:14px!important}
+.dcf-check input,.sec-fill input{width:20px;height:20px;flex-shrink:0}
+/* Controles: zona táctil mínima */
+.icon-button{min-width:40px;height:40px}
+.row-open{width:34px!important;height:34px!important}
+.more-button{min-width:40px;min-height:40px}
+.underlined-button,.preview-link{padding:8px 0}
+/* Cifras: alineación tabular en todas las tablas */
+.ratio-table td,.balance-table td,.raw-table td{font-variant-numeric:tabular-nums}
+
+@media(max-width:600px){
+ /* La 4.ª columna es ahora «Sector»: se mantiene y se oculta «Lectura», que sigue en el detalle de cada ratio. */
+ .ratio-table td:nth-child(4),.ratio-table th:nth-child(4){display:table-cell!important}
+ .ratio-table td:nth-child(5),.ratio-table th:nth-child(5){display:none}
+ .ratio-table td:first-child{min-width:130px!important}
+ .ratio-table td{font-size:13px!important}
+ .ratio-table td:nth-child(2),.ratio-table td:nth-child(3){font-size:14px!important}
+ .ratio-table .ratio-name{font-size:14px!important}
+ /* Filtros y pestañas: desplazamiento horizontal en lugar de cortarse */
+ .filters{flex-wrap:nowrap!important;overflow-x:auto;justify-content:flex-start!important;scrollbar-width:none;padding-bottom:2px}
+ .filters::-webkit-scrollbar{display:none}
+ .filters button{flex-shrink:0}
+ .section-heading{flex-wrap:wrap}
+ /* Financiación: el gráfico encima y la leyenda debajo */
+ .funding-content{flex-direction:column!important;align-items:stretch}
+ .donut{margin:0 auto}
+ .funding-legend>div{font-size:14px!important}
+ .preview-kpis small,.preview-foot{font-size:12px!important}
+ .home-bottom h2{font-size:14px!important}
+ .home-bottom p{font-size:13px!important}
+ .back-link{font-size:13px!important}
+ .period-control select{font-size:14px!important;padding:8px 10px}
+ .raw-table td{font-size:12px!important}
+ .balance-table td{font-size:12px!important}
+ .balance-table tr.total-row td{font-size:13px!important}
+ .dupont-factor small{max-width:90px}
+ .tabs button{font-size:13px!important}
+}
+.more-button{color:var(--t2)}
+.demo-notice strong{color:var(--t2)}
+.ratio-table th,.raw-table th{white-space:nowrap}
+@media(max-width:600px){
+ /* En móvil caben el ejercicio actual y el sector; el anterior sigue en el detalle y en la exportación. */
+ .ratio-table td:nth-child(3),.ratio-table th:nth-child(3){display:none}
+ .ratio-table td,.ratio-table th{padding-left:8px!important;padding-right:8px!important}
+ .ratio-table td:first-child,.ratio-table th:first-child{padding-left:0!important}
+}
+@media(max-width:600px){
+ .ratio-table td:last-child,.ratio-table th:last-child{display:none}
+ .pos-chip{white-space:normal;width:auto!important;max-width:120px;line-height:1.35}
+ .peer-select{flex:1 1 100%!important;min-width:0}
+ .peer-select select{width:100%;min-width:0}
+}
