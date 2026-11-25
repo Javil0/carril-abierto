@@ -33,19 +33,22 @@
 1. **De subir documentos a buscar por ticker (20/10).**
    - Empezamos por la idea de la propuesta y llegamos a construir un prototipo en Streamlit (`prototipo-streamlit/`) que leía CSV y Excel. La lectura de PDF no llegamos a probarla.
    - Después vimos que buscar por ticker eliminaba casi toda la fricción. El usuario ya no tiene que descargar las cuentas, darles formato y subirlas: escribe cuatro letras y lo tiene todo.
-   - Además, las cifras llegan estructuradas. El riesgo deja de ser «leer mal un número» y pasa a ser «que la fuente defina la partida de otra manera», y ese riesgo sí lo podemos controlar contrastando con la fuente primaria (decisión 2).
+   - Además, las cifras llegan estructuradas. El riesgo deja de ser «leer mal un número» y pasa a ser «que la fuente defina la partida de otra manera», y ese riesgo sí lo podemos controlar contrastando con la fuente primaria, el 10-K de la SEC (decisión 1).
 2. **Sin IA dentro de la web.**
    - Al principio queríamos llamar a un modelo de IA desde la web para interpretar los resultados. Al mirarlo vimos que el uso por API no está incluido en las suscripciones mensuales de Claude ni de ChatGPT: cada consulta tendría un coste.
    - Decidimos hacerlo todo con código: cálculos, avisos y explicaciones son reglas deterministas y probadas.
    - La IA se ha usado para desarrollar la web, no dentro de ella. Eso tiene una ventaja: el mismo dato da siempre el mismo resultado, y cada explicación se puede rastrear hasta su regla.
-3. **Punto de control (22/10).**
+3. **De una puntuación por área a la comparación con el sector.**
+   - Una nota de 0 a 10 tenía dos salidas. Si era general para todas las empresas, no significaría nada: una rotación de inventarios de 5× es alta para una petrolera y baja para un supermercado. Si la adaptábamos a cada sector, tendríamos que fijar a mano umbrales para decenas de sectores sin una base que los justificara.
+   - Preferimos que cada ratio se compare con lo que hacen empresas parecidas: la mediana y el rango P25–P75 de un grupo de comparables (decisión 2). Estar por encima o por debajo del rango se describe, pero no se convierte en una nota.
+4. **Punto de control (22/10).**
    - El profesor señaló dos carencias: faltaban métricas de flujo de caja, y había que tratar el patrimonio neto negativo y la deuda neta negativa. Las resolvimos el 06/11.
    - Se añadieron el FCF yield, la cobertura de deuda por flujo operativo y la deuda neta/EBITDA.
    - Con patrimonio negativo (McDonald's: −1.790 M$), la deuda/patrimonio, el ROE y el DuPont quedan «Pendiente» en lugar de mostrar cifras con el signo invertido.
    - Con deuda neta negativa (Alphabet), el ratio se etiqueta como «caja neta».
-4. **Valoración DCF (25/11).**
+5. **Valoración DCF (25/11).**
    - Si la web sirve para analizar empresas, tenía sentido que también estimara cuánto valen según los flujos de caja que generan, y no solo cómo están.
-   - Se añadió un DCF por flujo de caja libre para la empresa (FCFF), con todos los supuestos editables y la beta construida a partir de las tablas de Damodaran (decisión 4).
+   - Se añadió un DCF por flujo de caja libre para la empresa (FCFF), con todos los supuestos editables y la beta construida a partir de las tablas de Damodaran (decisión 3).
 
 **Qué se mantiene de la propuesta.**
 - **Datos que faltan:** la propuesta decía que, si un dato faltaba o no se podía leer con seguridad, la herramienta lo marcaría para que el usuario lo revisara en lugar de asumirlo. Es el «Pendiente» de la web: nunca se rellena un hueco con cero ni con una estimación.
@@ -55,7 +58,83 @@
 
 ## 2. Las tres decisiones importantes y lo que descartamos
 
-*(pendiente)*
+### Decisión 1 · Buscar por ticker en lugar de subir las cuentas
+
+**Qué decidimos.** El usuario escribe un ticker y la web descarga de Yahoo Finance el balance, la cuenta de resultados, los flujos de caja y la capitalización de cada cierre anual.
+
+**Por qué.**
+- **Menos fricción.** Con el prototipo de Streamlit, el usuario tenía que buscar las cuentas, descargarlas, ponerlas en el formato esperado y subirlas. Con un ticker, el análisis está listo en unos segundos.
+- **Menos riesgo de lectura.** Las cifras llegan estructuradas, cada una con su fecha y su moneda.
+- **Comparables posibles.** Al poder descargar cualquier empresa cotizada, la comparación sectorial deja de depender de que el usuario suba también las cuentas de sus competidores (decisión 2).
+
+**Qué costó y cómo lo controlamos.**
+- **Yahoo no es una fuente primaria.** Por eso cada partida se contrasta con el 10-K presentado en la SEC (API de EDGAR), con una tolerancia del 0,5 %.
+- **El EBIT de Yahoo no es el resultado operativo.** El contraste lo destapó en Alphabet (2025): 159.562 M$ de EBIT en Yahoo frente a 129.039 M$ de resultado operativo en el 10-K. Yahoo parte del resultado antes de impuestos e incluye ingresos financieros.
+  - Mantuvimos el EBIT de Yahoo, porque es la única definición disponible para todas las empresas, también las europeas.
+  - Renombramos el ratio a «margen EBIT» en lugar de «margen operativo».
+  - La pestaña de verificación muestra la diferencia.
+- **A veces faltan datos.** La regla es no inventar: el ratio queda «Pendiente» y se explica por qué.
+  - Hay un hueco que existe en el 10-K: el usuario puede completarlo, siempre de forma visible y reversible.
+  - Hay un hueco que se puede reconstruir con partidas del mismo cierre: se reconstruye y se marca como «derivado» con su fórmula. Por ejemplo, el EBITDA como EBIT más amortizaciones.
+
+**Qué descartamos.**
+- **Leer PDF con IA.** No llegamos a construirlo. Una cifra mal leída cambia todos los ratios y es difícil de detectar. Además, la extracción automática necesitaba un modelo por API, con coste por consulta.
+- **Seguir con la subida de CSV o Excel del prototipo.** Funcionaba, pero obligaba al usuario a preparar los datos y no permitía comparar con el sector sin que subiera también las cuentas de los comparables.
+- **Tomar Yahoo como verdad.** Era más rápido, pero no habríamos detectado diferencias de definición como la del EBIT.
+
+### Decisión 2 · Comparar con el sector en lugar de puntuar
+
+**Qué decidimos.** Cada ratio se compara con la mediana y el rango intercuartílico (P25–P75) de un grupo de comparables.
+- Hay 30 grupos definidos por el equipo (Ibex 35, Euro Stoxx 50 y grandes cotizadas de EE. UU.), con 247 tickers comprobados uno a uno en Yahoo el 08/11.
+- El usuario elige el grupo en un desplegable, con uno recomendado por defecto.
+- Se usa el ejercicio de cada comparable más cercano al de la empresa, con un máximo de 12 meses de diferencia.
+- Con menos de 3 valores no se publica mediana.
+
+**Por qué.**
+- **Un ratio solo se entiende frente a su sector.** Una nota general habría mezclado sectores incomparables. Una nota adaptada a cada sector nos habría obligado a inventar umbrales para decenas de sectores sin base que los justificara.
+- **La mediana y no la media.** La media se dispara con valores extremos, como un ROE del 140 % o una rotación de inventarios de 195×.
+- **Comparables con datos.** Los comparables con el ratio pendiente (por ejemplo, el ROE con patrimonio negativo) se excluyen de la estadística, y la web dice cuáles son.
+
+**Qué descartamos.**
+- **La puntuación por área de la propuesta**, por lo explicado arriba.
+- **Las «recomendaciones» de Yahoo como comparables.** Proponen las empresas que siguen los mismos inversores, no las del mismo sector. Para Inditex sugería Iberdrola, Repsol y ACS.
+- **Que el usuario escriba su propia lista de comparables.** No podríamos justificar ningún grupo. El servidor conserva la opción, pero la interfaz no la ofrece.
+
+**Ejemplo.** En el grupo de restauración de McDonald's, SBUX, YUM y DPZ también tienen patrimonio negativo. La mediana del ROE sale solo de CMG, DRI y QSR, y la web indica qué empresas se excluyen y por qué.
+
+### Decisión 3 · Añadir una valoración DCF con todos los supuestos a la vista
+
+**Qué decidimos.** La pestaña «Valoración DCF» descuenta al WACC los flujos de caja libres para la empresa (FCFF):
+- **FCFF** = EBIT × (1 − t) + amortizaciones − capex − inversión en circulante.
+- **Proyección y valor terminal:** 5 años de proyección y un valor terminal por crecimiento a perpetuidad (Gordon) o por múltiplo EV/EBITDA.
+- **Supuestos editables:** todos parten de la media de los tres últimos ejercicios o de una fuente citada. El usuario puede cambiar cualquiera y queda marcado como «supuesto del usuario».
+- **Tabla de sensibilidad:** muestra cómo cambia el valor si cambian el WACC y el crecimiento.
+
+**La beta, el parámetro más delicado.**
+- Se parte de la beta desapalancada de la industria en las tablas de Aswath Damodaran (NYU Stern, actualización del 05/01/2026).
+- Se reapalanca con la deuda/patrimonio de la empresa a valor de mercado: βL = βU × [1 + (1 − t) × D/E].
+- La industria de cada empresa sale de la propia clasificación de Damodaran, que cubre 246 de nuestros 247 tickers.
+- Junto a la fórmula, un aviso explica que es una estimación: supone que la empresa tiene el riesgo medio de su sector y que mantendrá su endeudamiento, y no es una regresión de su cotización.
+- El resto del WACC también tiene fuente:
+  - prima de riesgo de mercado y prima de riesgo país, de Damodaran;
+  - tipo libre de riesgo: el Treasury a 10 años (USD) o la curva AAA del Banco Central Europeo (EUR).
+
+**Por qué.**
+- **Valoración, no solo diagnóstico.** Los ratios dicen cómo está una empresa; el DCF estima cuánto vale según la caja que genera.
+- **FCFF y no FCFE.** El FCFF es el modelo de referencia del temario CFA y no depende de cómo se financie la empresa cada año.
+- **Supuestos editables.** El valor de un DCF depende casi por completo de sus supuestos. Mostrarlos, con su origen, es coherente con el resto de la web.
+
+**Qué descartamos.**
+- **La beta que publica Yahoo.** Exige un token para descargarla, depende de la ventana de regresión y es muy ruidosa por empresa. La media de una industria con decenas de empresas es más estable y se puede explicar.
+- **Reapalancar con el tipo impositivo efectivo de la empresa.** Comprobamos en las 288 filas de sus tablas (96 industrias en cada una de las tres regiones) que Damodaran desapalanca con el tipo marginal (25 % en EE. UU.). Si reapalancáramos con otro tipo, ida y vuelta no serían coherentes.
+- **Valorar bancos y aseguradoras por FCFF.** En un banco, la deuda y los depósitos son su materia prima, así que el WACC y el flujo libre no tienen sentido. La web no calcula el DCF, explica por qué e indica el modelo que se usaría en su lugar (exceso de rentabilidad sobre el patrimonio).
+- **Supuestos fijos o una única cifra de valor.** Habría escondido que el resultado es muy sensible a los supuestos.
+
+**Ejemplo (McDonald's, 25/11/2026).**
+- **Beta:** la beta desapalancada de restauración (0,767), reapalancada con una deuda/patrimonio de mercado de 0,274, da una beta de 0,925.
+- **Coste de capital:** un coste del capital propio del 8,96 % y un WACC del 7,54 %.
+- **Resultado:** 192 $ por acción con Gordon al 2 % y 305 $ con el múltiplo medio de su industria, frente a una cotización de 281 $.
+- **Lectura:** el valor terminal pesa el 77 % del valor de empresa. La web enseña esa sensibilidad en lugar de esconderla detrás de una única cifra.
 
 ## 3. ¿Dónde falló la máquina?
 
