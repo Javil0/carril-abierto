@@ -40,7 +40,7 @@ lib/        Descarga de Yahoo y de la SEC, con caché y control de errores
 tests/      Pruebas con datos reales guardados (tests/fixtures)
 prototipo-streamlit/   Primera versión (CSV/Excel + Streamlit)
 docs/       Propuesta del proyecto
-BITACORA.md Decisiones, errores detectados y verificación
+BITACORA.md Informe final: decisiones, errores de la IA y qué haríamos distinto
 ```
 
 ## Ejecutar en local

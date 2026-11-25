@@ -1,227 +1,112 @@
-# Bitácora del proyecto
+# Informe final · Carril Abierto
 
-## 20 de octubre de 2026 — Primera versión del prototipo
+> Versión en Markdown del informe final entregado en Word. El contenido es el mismo que el del documento final.
 
-### Qué quería hacer y qué hice
+**Equipo:** Javier López-Montenegro, Alejandro Torres y Bruno Ribeiro
 
-La propuesta inicial planteaba una web que recibiera balances y cuentas de resultados, extrajera sus partidas y usara IA para interpretarlas. Para tener algo demostrable con poco margen, implementé una aplicación local que carga CSV y Excel estructurados, permite revisar y corregir las cifras, y calcula cuatro indicadores con fórmulas explícitas.
+**Repositorio:** github.com/Javil0/carril-abierto · **Web:** https://carril-abierto.vercel.app
 
-### Decisiones importantes
+## 1. ¿Qué queríamos hacer y qué hicimos?
 
-1. **Empezar por CSV/Excel estructurado.** Se pospuso la extracción desde PDF porque tablas y formatos heterogéneos podrían provocar errores difíciles de detectar en una demo rápida.
-2. **Separar cálculo e interpretación.** Los ratios se calculan con código determinista. La versión actual usa explicaciones basadas en reglas y no llama a un modelo generativo.
-3. **No completar datos ausentes.** Si falta una cifra o el denominador es cero, el ratio se muestra como pendiente.
+**La propuesta (24/09).** Una web en la que el usuario subiera el balance y la cuenta de resultados en PDF o Excel. La IA extraería las partidas, la web calcularía ratios con una puntuación por área (liquidez, solvencia, rentabilidad y eficiencia) y la IA explicaría el resultado en lenguaje claro.
 
-### Qué puede fallar y cómo lo comprobaré
+**Lo que entregamos.** A partir de un ticker (AAPL, ITX.MC…), la web descarga de Yahoo Finance los estados anuales y calcula 13 ratios en cinco dimensiones (liquidez, deuda, actividad, rentabilidad y flujo de caja), el DuPont y el Altman Z-score. Cada cifra muestra su fórmula y su origen.
 
-- Un nombre de columna no reconocido puede dejar una partida vacía. Lo detectaré comprobando la tabla de revisión antes de aceptar el resultado.
-- Una cifra con separadores ambiguos puede interpretarse mal. Compararé el valor extraído con la cifra visible en el archivo original.
-- Un ratio correcto puede parecer bueno o malo sin contexto. Revisaré la fórmula y las cifras usadas; la demo no asigna puntuaciones ni hace comparaciones sectoriales.
+|                      | **Propuesta**          | **Resultado**                                                            |
+|----------------------|------------------------|--------------------------------------------------------------------------|
+| **Entrada de datos** | Subir PDF o Excel      | Escribir un ticker                                                       |
+| **Extracción**       | La IA lee el documento | Datos estructurados de Yahoo Finance, contrastados con el 10-K de la SEC |
+| **Cálculo**          | Ratios por área        | 13 ratios en cinco dimensiones, DuPont y Altman                          |
+| **Evaluación**       | Puntuación por área    | Comparación con la mediana y el rango P25–P75 del sector                 |
+| **Explicación**      | Texto generado por IA  | Reglas de código: fórmula, datos y lectura de cada ratio                 |
+| **Valoración**       | No estaba prevista     | DCF por FCFF con supuestos editables                                     |
 
-### Limitación y siguiente paso
+**Qué cambió y por qué.**
 
-La aplicación todavía no usa IA para redactar; las explicaciones son plantillas trazables. El siguiente paso sería incorporar una explicación generativa opcional que reciba solo los ratios calculados, manteniendo las fórmulas fuera del modelo y registrando cada discrepancia frente a las cuentas originales.
+1.  **De subir documentos a buscar por ticker (20/10).** Llegamos a construir un prototipo en Streamlit que leía CSV y Excel (el PDF no llegó a probarse). El ticker eliminaba casi toda la fricción y las cifras llegan estructuradas: el riesgo pasa de «leer mal un número» a «que la fuente defina la partida de otra manera», y eso se controla con el 10-K (decisión 1).
 
-### Registro de errores de IA
+2.  **Sin IA dentro de la web.** El uso por API no entra en las suscripciones de Claude ni de ChatGPT: cada consulta tendría coste. Todo son reglas deterministas y probadas, así que el mismo dato da siempre el mismo resultado. La IA se usó para desarrollar la web, no dentro de ella.
 
-En esta primera versión no se usó un modelo generativo para extraer cifras o interpretar resultados. Por tanto, todavía no hay errores de IA que documentar. En la siguiente iteración se anotarán tres casos concretos con la respuesta del modelo y la fuente primaria utilizada para contrastarla.
+3.  **De una puntuación por área a la comparación con el sector.** Una nota general no significaría nada (una rotación de inventarios de 5× es alta para una petrolera y baja para un supermercado), y una nota por sector exigía fijar a mano umbrales sin base. Cada ratio se compara con la mediana y el rango P25–P75 de sus comparables, sin convertirlo en nota (decisión 2).
 
-## 20 de octubre de 2026 — Consulta automática por ticker en Sites
+4.  **Punto de control (22/10).** Se añadieron FCF yield, cobertura de deuda por flujo operativo y deuda neta/EBITDA; con patrimonio negativo (McDonald's: −1.790 M$) la D/E, el ROE y el DuPont quedan «Pendiente», y con deuda neta negativa (Alphabet) se etiqueta «caja neta».
 
-La propuesta de Sites se convirtió en una aplicación con servidor: introducir un ticker consulta el balance y la cuenta de resultados anuales de Yahoo Finance. El usuario puede elegir el ejercicio, revisar o editar seis partidas y descargar los datos en CSV y el informe en texto. Las cifras conservan la moneda original y se muestran en unidades completas; el gráfico etiqueta expresamente su escala en millones cuando corresponde.
+5.  **Valoración DCF.** La web estima también cuánto vale la empresa, con un DCF por FCFF (decisión 3).
 
-Se decidió consultar Yahoo desde el servidor para evitar depender del acceso entre dominios del navegador. Una llamada directa con curl recibió un HTTP 429; la descarga con yfinance funcionó y una prueba con fetch desde JavaScript también funcionó. No fue necesario contratar una API ni conectar un modelo generativo.
+**Qué se mantiene de la propuesta.** Un dato que falta se marca «Pendiente» y nunca se rellena con cero ni con una estimación. Cada ratio enseña su fórmula y sus partidas de origen. Y comprobar los cálculos «con ejemplos calculados manualmente» se ha convertido en 36 pruebas automáticas con datos reales.
 
-Las decisiones financieras principales fueron usar TotalDebt como deuda financiera, no sustituirla por pasivo total; emparejar balance y resultados de la misma fecha y moneda; e identificar el ROA calculado con activos al cierre como una aproximación. Un dato ausente o un denominador cero deja el indicador pendiente. En Santander, la fuente no devuelve las partidas corrientes habituales: la liquidez queda pendiente.
+## 2. Las tres decisiones importantes y lo que descartamos
 
-Se comprobaron consultas reales de AAPL, MSFT y SAN.MC, el cambio de ejercicio de AAPL en el navegador y la descarga de su CSV. Seis pruebas automatizadas cubren fórmulas, fechas, monedas, datos faltantes, cero, validación del ticker y el error 429. El endpoint privado publicado devolvió HTTP 200 y los ratios de AAPL. La disponibilidad futura depende de Yahoo y sus límites. Esto documenta errores de integración y decisiones de diseño, no constituye todavía tres errores de interpretación cometidos por un modelo de IA.
+### Decisión 1 · Buscar por ticker en lugar de subir las cuentas
 
-## 20 de octubre de 2026 — Site funcional desde el template Carril CFA Balance
+**Qué decidimos y por qué.** La web descarga de Yahoo Finance el balance, la cuenta de resultados, los flujos de caja y la capitalización de cada cierre anual. Elimina la fricción del prototipo (buscar, descargar, formatear y subir las cuentas), las cifras llegan estructuradas con su fecha y su moneda, y permite comparar con el sector sin que el usuario suba las cuentas de los competidores.
 
-El template se adaptó a un nuevo Site privado con un inicio por ticker y una página de análisis con pestañas de ratios, balance y datos brutos. Se incorporaron diez ratios, DuPont y Altman clásico. Se mantuvo la fuente del template personal como referencia independiente.
+**Qué costó y cómo lo controlamos.**
 
-La lógica financiera se comparte entre servidor y navegador. Los promedios requieren un cierre anterior comparable de la misma moneda. ROE y DuPont usan beneficio y patrimonio ordinarios; la deuda financiera se distingue del pasivo total. Altman usa capitalización histórica del periodo, y su interpretación requiere que el analista seleccione que la versión industrial cotizada es aplicable.
+- **Yahoo no es una fuente primaria:** cada partida se contrasta con el 10-K de la SEC (API de EDGAR) con una tolerancia del 0,5 %.
 
-Se verificaron ocho pruebas de cálculo y validación, consultas reales de AAPL, MSFT y Santander, las pestañas del navegador y el ejercicio más antiguo con ratios pendientes por falta de saldo inicial. Yahoo no devolvió el gasto de intereses de Apple en el último ejercicio: se dejó pendiente en vez de inventar un importe. La publicación respondió HTTP 200 para MSFT con diez ratios disponibles y DuPont. La fuente puede limitar solicitudes y su disponibilidad no está garantizada.
+- **El EBIT de Yahoo no es el resultado operativo:** en Alphabet (2025), 159.562 M$ frente a 129.039 M$ en el 10-K, porque Yahoo parte del resultado antes de impuestos e incluye ingresos financieros. Lo mantuvimos por ser la única definición disponible para todas las empresas, también las europeas; renombramos el ratio a «margen EBIT» y la pestaña de verificación muestra la diferencia.
 
-Publicación: https://carril-cfa-balance.handywood33.chatgpt.site
+- **A veces faltan datos:** el ratio queda «Pendiente» y se explica por qué. Si el hueco existe en el 10-K, el usuario puede completarlo de forma visible y reversible; si se puede reconstruir con partidas del mismo cierre (EBITDA = EBIT + amortizaciones), se marca como «derivado» con su fórmula.
 
-## 22/10/2026 · Altman automático
-- Petición: calcular Altman sin confirmar manualmente el tipo de empresa.
-- Cambio: se elimina el selector y el bloqueo de aplicabilidad; el total y sus cinco componentes se calculan automáticamente cuando hay datos suficientes.
-- Si faltan cifras del mismo periodo o el denominador no es válido, sigue pendiente y se explica la causa.
-- Se mantiene la descripción de la versión clásica industrial y su limitación sectorial.
-- Compilación completada y versión 2 publicada en https://carril-cfa-balance.handywood33.chatgpt.site. No se ejecutaron pruebas en este cambio.
+**Qué descartamos.** Leer PDF con IA (una cifra mal leída cambia todos los ratios, es difícil de detectar y la extracción tenía coste por consulta); seguir con la subida de CSV o Excel (obligaba a preparar los datos e impedía comparar con el sector), y tomar Yahoo como verdad (no habríamos detectado diferencias como la del EBIT).
 
-## 06/11/2026 · Mejoras tras el punto de control
-- Origen: respuesta del profesor (23/10) al punto de control. Pedía métricas de flujo de caja libre (FCF yield, cobertura de deuda por flujo operativo) y vigilar los casos de fondos propios negativos y deuda neta negativa.
-- Nuevas partidas de Yahoo: OperatingCashFlow, CapitalExpenditure, FreeCashFlow y EBITDA.
-- Tres ratios nuevos (de 10 a 13) y una quinta dimensión, «Flujo de caja»:
-  - **FCF yield** = (flujo operativo − |capex|) / capitalización del mismo cierre. Yahoo publica el capex en negativo, así que se usa el valor absoluto para que el resultado no dependa del signo de la fuente.
-  - **Cobertura de deuda por flujo operativo** = flujo operativo / deuda financiera. Si no hay deuda, queda como «Sin deuda financiera» en lugar de dividir entre cero.
-  - **Deuda neta / EBITDA**, con deuda neta = deuda financiera − (efectivo + inversiones corrientes).
-- Patrimonio negativo: D/E, ROE y DuPont quedan pendientes y se explica el motivo. El ROE también queda pendiente si cualquiera de los dos cierres usados en el promedio es negativo, porque la media podría salir positiva y ocultarlo. Se muestra un aviso en cabecera y el gráfico de financiación lo explica en lugar de dibujar porcentajes sin sentido.
-- Deuda neta negativa: el ratio sale negativo y se etiqueta como «caja neta». Es holgura, no un apalancamiento más bajo.
-- Control: el FCF calculado se contrasta con el FreeCashFlow publicado por Yahoo y se avisa si la diferencia supera el 1 %.
-- Nueva tabla «Lo que genera en caja» en la pestaña Balance.
-- Verificación: 14 pruebas superadas (8 anteriores y 6 nuevas). Dos de ellas usan datos reales de Yahoo guardados en `tests/fixtures`:
-  - McDonald's 2025: patrimonio de −1.790 M$, FCF yield del 3,31 %, deuda neta/EBITDA de 3,68× y FCF calculado igual al publicado (7.186 M$).
-  - Alphabet 2025: caja neta de 67.552 M$ y deuda neta/EBITDA de −0,37×.
-- La interfaz se revisó con capturas en un servidor local con esos datos.
-- Pendiente: volver a publicar el Site desde la herramienta de Sites. La compilación completa no se pudo ejecutar fuera del Mac porque `node_modules` contiene binarios nativos de macOS.
+### Decisión 2 · Comparar con el sector en lugar de puntuar
 
-## 06/11/2026 · Revisión de botones
-- Se comprobaron de forma automática (Playwright) todos los controles: navegación, ticker, sugerencias, 6 filtros, 13 ratios (nombre y ↗), Altman, CSV, selector de ejercicio, pestañas (también con teclado), buscador, Método, cierre del diálogo y enlaces a Yahoo.
-- Errores corregidos:
-  - El texto «Ver fórmula y datos» de las tarjetas KPI no respondía. Ahora cada tarjeta abre la fórmula de su ratio.
-  - La etiqueta «↗ Cada fórmula, a la vista» parecía un botón y no hacía nada. Ahora abre el Método.
-  - «···» en «Qué financia el activo» era decorativo. Ahora lleva a la pestaña Balance.
-  - «Datos que puedes revisar ↗» en la portada no hacía nada. Ahora abre el Método.
-  - «Análisis» sin ticker dejaba la dirección atascada en #/analisis y un segundo clic no hacía nada. Ahora vuelve al inicio y pide un ticker.
+**Qué decidimos.** Cada ratio se compara con la mediana y el rango P25–P75 de un grupo de comparables: 30 grupos definidos (Ibex 35, Euro Stoxx 50 y grandes cotizadas de EE. UU.), con 247 tickers. El usuario elige el grupo, se usa el ejercicio de cada comparable más cercano al de la empresa (máximo 12 meses de diferencia) y con menos de 3 valores no se publica mediana.
 
-## 06/11/2026 · Ajustes de legibilidad
-- Gráfico «Cómo evoluciona el negocio» más estrecho y «Qué financia el activo» más grande (donut de 145 a 220 px).
-- Texto pequeño ampliado: tabla de ratios, fórmulas, notas, pestañas, filtros, balance, datos brutos y diálogos.
-- DuPont con cifras más grandes (de 24 a 44 px) para que encajen con su recuadro; Altman también más grande.
-- Comprobado a 1440, 1000 y 390 px de ancho sin desbordamiento horizontal.
+**Por qué.** Un ratio solo se entiende frente a su sector. La mediana, y no la media, porque la media se dispara con extremos como un ROE del 140 % o una rotación de inventarios de 195×. Los comparables con el ratio pendiente se excluyen y la web dice cuáles: en restauración, SBUX, YUM y DPZ tienen patrimonio negativo, así que la mediana del ROE de McDonald's sale solo de CMG, DRI y QSR.
 
-## 06/11/2026 · Contraste con la SEC y comparación sectorial
-### Verificación con fuente primaria (pestaña «Verificación SEC»)
-- Cada partida de Yahoo se compara con el 10-K presentado en EDGAR (API companyfacts, taxonomía us-gaap) para el mismo cierre.
-- Decisiones:
-  - Tolerancia del 0,5 % para redondeos.
-  - Hasta 10 días de diferencia de fecha, porque Yahoo lleva el cierre de Apple del 26/09 al 30/09.
-  - Solo hechos anuales de formularios 10-K; se descartan los trimestres.
-  - Si un 10-K posterior reexpresa una cifra, se usa la más reciente.
-  - El pasivo total se deriva (pasivo y patrimonio − patrimonio) cuando la empresa no lo etiqueta, como ocurre en MCD.
-- «Completar huecos» solo rellena datos que falten en Yahoo, nunca sustituye una cifra existente. Es visible (aviso y estado «sec» en Datos brutos) y reversible. El contraste se descarga en CSV con enlace a cada 10-K.
-- Fuera de alcance: emisores no estadounidenses (SAN.MC → habría que usar la CNMV) y empresas que presentan el 20-F con IFRS.
-- Hallazgos con datos reales (consulta del 6/11/2026):
-  1. **El EBIT de Yahoo no es el resultado operativo del 10-K.** Alphabet 2025: 159.562 M frente a 129.039 M (+23,7 %). Yahoo parte del resultado antes de impuestos e incluye ingresos financieros. Con el 10-K, el «margen operativo» de la web pasaría del 39,6 % al 32,0 %. Se marca como «definición distinta», no como error.
-  2. **Apple no publica el gasto por intereses en sus 10-K de 2025 y 2026** (no aparece ninguna etiqueta InterestExpense). La cobertura de intereses pendiente no es un fallo de Yahoo, sino que el dato no está en la fuente primaria.
-  3. **MCD: el patrimonio difiere en 1 M** (−1.790 M en Yahoo frente a −1.791 M en el 10-K). La causa es la participación minoritaria; queda dentro de la tolerancia.
-  - Las demás partidas de MCD y GOOGL coinciden exactamente.
-- Pendiente antes de publicar: la SEC exige identificarse en el User-Agent. Hay que poner el correo del equipo en `lib/sec.mjs` (SEC_USER_AGENT).
+**Qué descartamos.** La puntuación por área de la propuesta; las «recomendaciones» de Yahoo, que proponen empresas seguidas por los mismos inversores y no del mismo sector (para Inditex, Iberdrola, Repsol y ACS), y que el usuario escriba su propia lista, porque no podríamos justificar ningún grupo.
 
-### Comparación sectorial (columna «Sector (mediana)» y ventana de cada ratio)
-- Grupos de comparables definidos por el equipo (14 grupos en `src/peers.mjs`). El usuario puede escribir su propia lista.
-- Para cada ratio se calcula la mediana y el rango intercuartílico (P25–P75) con las mismas fórmulas, usando el ejercicio de cada comparable más cercano al de la empresa (máximo 200 días).
-- Decisiones:
-  - Se usan la mediana y los cuartiles, no la media, porque la media es muy sensible a valores extremos (un ROE de 140 % o una rotación de inventario de 195×).
-  - Sin al menos 3 valores no se publica mediana.
-  - Los comparables con un ratio pendiente (por ejemplo, un ROE con patrimonio negativo) se excluyen de esa estadística.
-  - «Por encima» o «por debajo» del rango es descriptivo, no una nota.
-- Caso real: en el grupo de restauración de MCD, SBUX, YUM y DPZ también tienen patrimonio negativo. La mediana del ROE se calcula solo con CMG, DRI y QSR (47,4 %), y la ventana del ratio indica qué empresas se excluyen y por qué.
-- Verificación: 22 pruebas superadas (8 nuevas), con extractos reales de la SEC y de Yahoo en `tests/fixtures`. Revisión de botones y del diseño a 1440 y 390 px sin errores.
+### Decisión 3 · Añadir una valoración DCF con todos los supuestos a la vista
 
-## 08/11/2026 · Ajustes de interfaz
-- Letra más grande en la portada, en «Cambiar empresa», en la cabecera de análisis (ejercicio, descarga, fuente) y en el aviso naranja.
-- Se quita de la interfaz el formulario para elegir comparables a mano: la comparación sectorial usa solo los grupos definidos por el equipo, que se pueden justificar en la bitácora. El servidor conserva la opción, pero ya no se usa.
-- Tabla de ratios: +1 px en cabeceras (11), nombres (14), categorías (11), valores y medianas (16), etiquetas de rango (10) y lectura (13).
-- Sugerencias de la portada: NVDA (NVIDIA), GOOGL (Alphabet) y SAN.MC (Santander); ticker inicial NVDA.
+**Qué decidimos.** La pestaña «Valoración DCF» descuenta al WACC el FCFF = EBIT × (1 − t) + amortizaciones − capex − inversión en circulante, con 5 años de proyección y un valor terminal por crecimiento a perpetuidad (Gordon) o por múltiplo EV/EBITDA. Los supuestos parten de la media de los tres últimos ejercicios o de una fuente citada, son editables (quedan marcados como «supuesto del usuario») y una tabla de sensibilidad cruza WACC y crecimiento.
 
-## 08/11/2026 · Inditex en la portada, GitHub y Vercel
-- Los ejemplos de la portada pasan a ser Inditex (ITX.MC), Alphabet (GOOGL) y Santander (SAN.MC). Inditex tiene en Yahoo todas las partidas que usan los ratios; su ejercicio cierra el 31 de enero y está en euros.
-- Nuevo grupo de comparables «Moda y distribución textil»: H&M, TJX, Ross, Gap, Lululemon y Nike. Antes Inditex caía en un grupo del Ibex junto a Repsol, Aena o Telefónica, que no tienen un modelo de negocio comparable. Los ratios no tienen unidades, así que se pueden comparar aunque H&M informe en coronas suecas.
-- Inditex no presenta 10-K, así que la pestaña de verificación explica que su fuente primaria serían las cuentas anuales depositadas en la CNMV.
-- La web se separa de la plataforma de Sites de ChatGPT y se reorganiza para Vercel:
-  - `public/`: la web estática.
-  - `api/`: tres funciones (`financials`, `sec`, `peers`).
-  - `lib/`: la lógica de servidor.
-  - Sin dependencias externas: solo Node 20 o superior y `fetch`.
-- El contacto para la SEC deja de estar en el código y pasa a la variable de entorno `SEC_USER_AGENT`.
-- Repositorio público: github.com/Javil0/carril-abierto. Contiene la web, las pruebas, el prototipo de Streamlit de la primera versión, la propuesta y esta bitácora.
-- 23 pruebas superadas (1 nueva con los datos reales de Inditex y su grupo).
+**La beta, el parámetro más delicado.** Se parte de la beta desapalancada de la industria en las tablas de Aswath Damodaran (NYU Stern, actualización del 05/01/2026), y se reapalanca con la deuda/patrimonio de mercado de la empresa: βL = βU × \[1 + (1 − t) × D/E\]. Un aviso aclara que es una estimación (supone el riesgo medio del sector y un endeudamiento constante), no una regresión de la cotización. Las primas de riesgo de mercado y país también salen de Damodaran; el tipo libre de riesgo, del Treasury a 10 años (USD) o de la curva AAA del BCE (EUR).
 
-## 08/11/2026 · Comparables: 30 sectores y desplegable
-- Problema detectado en la web publicada (Vercel): muchas empresas no tenían grupo, y Apple solo reunía 2 comparables. Su ejercicio cierra en septiembre y el de Alphabet, Meta o Amazon en diciembre: 273 días de diferencia, más que la ventana de 200 días.
-- Alternativa descartada: las «recomendaciones» de Yahoo. Proponen las empresas que siguen los mismos inversores, no las del mismo sector: para Inditex, Iberdrola, Repsol y ACS; para Coca-Cola, JPMorgan y Disney. Usarlas como comparables sectoriales habría sido un error de concepto.
-- Decisión: 30 grupos definidos por el equipo que cubren el Ibex 35, el Euro Stoxx 50 y grandes cotizadas de EE. UU. Son 247 tickers, comprobados uno a uno en Yahoo el 8/11/2026. Se corrigieron Fiserv (FISV) y Roche (RO.SW), y se excluyó Logista porque Yahoo no tiene su último ejercicio.
-- El usuario elige el grupo en un desplegable, ordenado por áreas. Por defecto se propone el primer grupo que contiene la empresa. Si no está en ninguno, se le pide que elija.
-- La ventana pasa de 200 días a 12 meses: se usa el ejercicio de cada comparable más cercano al de la empresa, y la web muestra su fecha.
-- Se descargan como mucho 8 comparables por consulta. En banca, seguros e inmobiliario se muestra un aviso sobre la lectura de los ratios.
-- 24 pruebas superadas.
+**Qué descartamos.** La beta de Yahoo (exige un token, depende de la ventana de regresión y es muy ruidosa por empresa); reapalancar con el tipo impositivo efectivo, porque Damodaran desapalanca con el marginal (25 % en EE. UU; valorar bancos y aseguradoras por FCFF (la web explica por qué no y remite al modelo de exceso de rentabilidad sobre el patrimonio), y dar una única cifra con supuestos fijos.
 
-## 25/11/2026 · Datos que faltaban en la web aunque Yahoo los tiene
-- Problema: en varias empresas la web publicada mostraba partidas como «no disponibles» que en Yahoo sí aparecen.
-- Revisión con el navegador, comparando la web y Yahoo empresa a empresa:
-  - **Santander y la banca en general:** no es un fallo. Yahoo presenta el balance y la cuenta de un banco en otro formato (préstamos, depósitos, margen de intereses, CET1) y no tiene activo y pasivo corrientes, EBIT, EBITDA ni coste de ventas. Lo que en Yahoo figura como «coste» es el gasto por intereses de depósitos. Esos ratios siguen pendientes a propósito. Solo se recupera «Receivables» (11.132 M€).
-  - **Iberdrola (EBIT) y ASML (flujo operativo):** fallo real. Con la misma petición, el navegador recibe los datos de Yahoo, pero el servidor de Vercel (Washington) los recibe vacíos. No depende de los parámetros de región: Yahoo responde distinto según desde dónde se consulte.
-  - **Telefónica (flujo operativo):** Yahoo no lo publica, pero sí el FCF y el capex.
-  - **TotalEnergies (FCF yield):** se publica en dólares y su capitalización en euros. El ratio queda pendiente por mezcla de monedas, de forma deliberada.
-- Decisión: reconstruir la partida con otras del mismo cierre y moneda, solo si falta, y marcarla como «derivada» con su fórmula en Datos brutos. Nunca se sustituye una cifra publicada.
-  - EBIT = resultado antes de impuestos + gasto por intereses. Es la definición de Yahoo: coincide exactamente en IBE, ITX, MCD, REP y TEF. Apple no publica intereses, así que no se reconstruye.
-  - Flujo operativo = flujo de operaciones continuadas, o bien FCF + capex. ASML: 12.659 M€; Telefónica: 9.722 M€.
-  - EBITDA = EBIT + amortizaciones. IBE: 10.270 + 6.493 = 16.763 M€, igual al publicado.
-  - Deuda corriente y no corriente incluidos arrendamientos (Nestlé), y «Receivables» como cuentas a cobrar.
-- 25 pruebas superadas (1 nueva, con las cifras reales de IBE, ASML, TEF y SAN, que comprueba también que no se mezclan monedas ni se pisan datos publicados).
+**Ejemplo (McDonald's, 25/11/2026).** La beta desapalancada de restauración (0,767), reapalancada con una deuda/patrimonio de mercado de 0,274, da una beta de 0,925, un coste del capital propio del 8,96 % y un WACC del 7,54 %. Resultado: 192 $ por acción con Gordon al 2 % y 305 $ con el múltiplo medio de su industria, frente a una cotización de 281 $. El valor terminal pesa el 77 % del valor de empresa, y la web enseña esa sensibilidad.
 
-## 25/11/2026 · Valoración DCF (FCFF) con la beta de Damodaran
-- Objetivo: que la web también valore la empresa por descuento de flujos, con todos los supuestos editables (crecimiento, márgenes, WACC, valor terminal…).
-- Modelo: **FCFF** (flujo libre para la empresa), el estándar del temario CFA. FCFF = EBIT × (1 − t) + amortizaciones − capex − inversión en circulante. Se proyectan 5 años (de 1 a 15) y se descuentan al WACC, con la convención de mitad de año activada por defecto. El valor terminal se calcula por Gordon (g∞ = 2 % por defecto) o con un múltiplo EV/EBITDA. Del valor de empresa se resta la deuda neta y los minoritarios a valor contable.
-- Supuestos de partida, cada uno con su fórmula visible:
-  - Crecimiento: CAGR de los ingresos de los tres últimos ejercicios.
-  - Margen EBIT, amortizaciones, capex y circulante: media de los tres últimos ejercicios, en % de los ingresos.
-  - Tipo impositivo: Σ impuestos / Σ resultado antes de impuestos.
-  - Coste de la deuda: gasto por intereses / deuda media.
-  - Para ello se añadieron cinco series de Yahoo, que también aparecen en Datos brutos: resultado antes de impuestos, impuestos, amortizaciones, variación del circulante y acciones en circulación.
-- **Beta**, como propuso el equipo:
-  - Se parte de la beta desapalancada de la industria en las tablas de Aswath Damodaran (NYU Stern, actualización del 05/01/2026) y se reapalanca con la D/E de la empresa a valor de mercado (Hamada).
-  - La web explica cómo se construye y avisa de que es una estimación.
-  - La tabla se guarda como copia fechada (`public/damodaran.mjs`), no se consulta en directo: así el cálculo es reproducible.
-  - La industria de cada empresa sale de la propia clasificación de Damodaran (`indname.xls`): cubre 246 de nuestros 247 tickers. La excepción es Volkswagen, que toma la industria más frecuente de su grupo (Auto & Truck).
-  - Hay tres tablas, EE. UU., Europa occidental y global, según la región de la empresa. El usuario puede cambiar la industria, la tabla o la beta.
-- **Hallazgo al comprobar las tablas:**
-  - Damodaran desapalanca con el tipo **marginal** de cada región (25 % en EE. UU. y 24,71 % en Europa), no con el efectivo. Lo comprobamos en las 288 filas: βu = β / (1 + 0,75 × D/E) reproduce su beta desapalancada.
-  - Por eso reapalancamos con ese mismo tipo marginal: si usáramos el tipo efectivo de la empresa, ida y vuelta no serían coherentes.
-  - Hay una prueba automática que reapalanca cada industria con su D/E y recupera la beta apalancada publicada.
-- Resto del WACC:
-  - **ERP:** prima de un mercado maduro de Damodaran (4,23 %).
-  - **Prima de riesgo país**, según la sede (España: 1,55 %; EE. UU.: 0,23 %).
-  - **Tipo libre de riesgo:** Treasury a 10 años (índice ^TNX, vía Yahoo) para cuentas en USD, o curva AAA a 10 años del BCE para cuentas en EUR. En otras monedas lo introduce el usuario.
-  - **Pesos:** a valor de mercado, con la misma D/E que la beta.
-- **Bloqueos y avisos:**
-  - Banca y seguros no se valoran por FCFF. La deuda es su materia prima, así que se muestra el motivo.
-  - Si g∞ ≥ WACC, no se calcula.
-  - Avisos cuando:
-    - el valor terminal supera el 75 % del EV;
-    - el FCFF proyectado es negativo;
-    - g∞ supera al tipo libre de riesgo;
-    - la acción cotiza en otra moneda que las cuentas (TSM: USD frente a TWD); en ese caso no se compara con la cotización.
-  - Apple no publica gasto por intereses: el coste de la deuda queda «Pendiente» y lo introduce el usuario. No se inventa.
-- **Ejemplo (McDonald's, 25/11/2026):**
-  - βu de Restaurant/Dining 0,767, D/E de mercado 0,274 → βL 0,925 → Ke 8,96 %.
-  - Con un peso de la deuda del 21,5 %, el WACC es del 7,54 %.
-  - El patrimonio contable negativo no impide calcular la D/E, porque se usa la capitalización.
-  - Resultados: valor por acción de 192 $ con Gordon al 2 % y de 305 $ con el múltiplo de la industria (17,5×), frente a 281 $ de cotización.
-  - La diferencia entre los dos métodos y el peso del valor terminal (77 %) son justo lo que la web enseña a leer.
-  - Su coste histórico de la deuda (2,96 %) está por debajo del tipo libre de riesgo (4,8 %), porque la deuda se emitió con tipos más bajos. La web lo advierte, porque para el WACC conviene el coste marginal actual.
-- 36 pruebas superadas (11 nuevas):
-  - un DCF calculado a mano;
-  - la convención de mitad de año;
-  - la coherencia entre Gordon y el múltiplo;
-  - el WACC por CAPM;
-  - los datos pendientes;
-  - Hamada frente a Damodaran;
-  - los bloqueos;
-  - la tabla de sensibilidad;
-  - la clasificación por industrias;
-  - McDonald's con datos reales;
-  - la lectura de la curva del BCE.
+## 3. ¿Dónde falló la máquina?
 
-## 25/11/2026 · Auditoría de legibilidad y uso
-- Revisión automática en un navegador real, en tres anchos (1440, 1280 y 390 px), de la portada, las cinco pestañas y los tres diálogos. Se midió el tamaño y el contraste de cada texto visible (unos 2.200 en escritorio) y se probaron 34 acciones: búsqueda y errores, cambio de ejercicio, filtros, comparables, diálogos (también con Escape), exportaciones CSV, verificación SEC, DCF, enlaces directos, recarga, botón «atrás» y navegación con teclado.
-- Resultado de la revisión: todas las funciones respondían, sin errores de JavaScript. En cambio:
-  - **Letra pequeña:** 68 tipos de texto medían menos de 12 px, y en móvil algunos bajaban a 6–8 px.
-  - **Poco contraste:** 89 tipos de texto quedaban por debajo del contraste mínimo (WCAG AA, 4,5:1). Era gris claro sobre fondo claro, también en las pestañas no seleccionadas y en las cabeceras de tabla.
-  - **Tabla de ratios en móvil:** al añadir la columna «Sector», la regla de móvil ocultaba el sector en vez de la lectura, que quedaba aplastada en una columna de una palabra por línea.
-  - **Leyenda de la financiación en móvil:** se cortaba.
-  - **Filtros en móvil:** se salían de la pantalla.
-  - **Cifras de cuatro dígitos:** salían sin separador de miles («6220,00 M»).
-- Correcciones:
-  - Una capa de legibilidad al final de `styles.css`: mínimo de 12 px (13–14 px en notas) y tres grises con contraste ≥ 4,5:1 sobre todos los fondos.
-  - Zonas táctiles más grandes.
-  - En móvil, la tabla de ratios muestra el ejercicio actual y el sector. El año anterior, la lectura y la fórmula siguen en el detalle de cada ratio.
-  - Leyenda bajo el gráfico, y filtros y pestañas con desplazamiento horizontal.
-  - Separador de miles siempre.
-- Tras los cambios: 0 textos por debajo de 12 px, 0 por debajo del contraste mínimo, 34 de 34 acciones correctas y 36 pruebas superadas.
+### Caso 1 · Agrupó a Inditex por índice bursátil y no por sector
+
+- **Qué nos dijo.** En el primer reparto de comparables (14 grupos), la IA metió a Inditex en un grupo del Ibex con Repsol, Aena y Telefónica y lo presentó como su grupo sectorial.
+
+- **Cómo lo detectamos.** Probando tickers: la rotación de inventarios y el margen de Inditex se comparaban con empresas casi sin inventario o con otra estructura de costes, y las etiquetas «por encima» o «por debajo del rango» no tenían sentido.
+
+- **Corrección.** Nuevo grupo «Moda y distribución textil» (H&M, TJX, Ross, Gap, Lululemon, Nike y Adidas). Como los ratios no tienen unidades, H&M es comparable aunque presente sus cuentas en coronas suecas.
+
+### Caso 2 · Dio por inexistentes datos que Yahoo sí tiene
+
+- **Qué nos dijo.** El código de la IA interpretaba «la serie llega vacía» como «el dato no existe», y lo dio por correcto porque las pruebas pasaban: Iberdrola aparecía sin EBIT, ASML sin flujo de caja operativo y varios ratios quedaban pendientes sin motivo.
+
+- **Cómo lo detectamos.** Comparando la web publicada con Yahoo Finance en el navegador: al servidor de Vercel (Washington) Yahoo le devolvía vacías series que en el navegador sí aparecen.
+
+- **Corrección.** Si falta una partida, se calcula con otras del mismo ejercicio y moneda (EBIT = resultado antes de impuestos + gasto por intereses; flujo operativo = FCF + capex; EBITDA = EBIT + amortizaciones), se marca como «derivada» en «Datos brutos» y nunca sustituye una cifra publicada. El EBIT reconstruido coincide con el de Yahoo en Iberdrola, Inditex, McDonald's, Repsol y Telefónica, y el EBITDA de Iberdrola (10.270 + 6.493 = 16.763 M€) con el publicado; quedó como prueba.
+
+### Caso 3 · Propuso que el usuario introdujera la beta a mano
+
+- **Qué nos dijo.** Al diseñar el DCF, la IA propuso que el usuario introdujera la beta, el tipo libre de riesgo, la prima de riesgo de mercado y el coste de la deuda. Sobre la beta: «Es más honesto que el usuario la introduzca e indique su fuente.»
+
+- **Cómo lo detectamos.** Revisando el plan: el usuario no tiene una beta a mano, dos usuarios obtendrían valores distintos y el DCF sería una calculadora vacía.
+
+- **Fuente primaria.** Las tablas de betas por industria de Damodaran (betas.xls, betaEurope.xls y betaGlobal.xls, 05/01/2026), con la beta media, la D/E de mercado, el tipo impositivo y la beta desapalancada de cada industria.
+
+- **Corrección.** La web toma la beta desapalancada de la industria y la reapalanca con la deuda/patrimonio de mercado de la empresa; el usuario puede cambiarla, pero parte de una cifra con fuente. Al verificar la fórmula vimos que Damodaran usa el tipo **marginal**, no el efectivo que proponía la IA; con él se recupera la beta publicada en las 288 filas.
+
+## 4. ¿Qué haríamos distinto?
+
+- **Pedir a la IA varios planes antes de empezar.** Comparar desde el principio dos o tres planes (subir documentos, ticker, base de datos) nos habría ahorrado el prototipo de Streamlit.
+
+- **No aceptar cambios sin pruebas.** El 22/10 el Altman pasó a calcularse automáticamente sin ejecutar pruebas, también para bancos; hoy la web avisa en banca, seguros e inmobiliario, pero debió decidirse y probarse en el mismo cambio. Desde noviembre cada cambio llega con su prueba: hay 36 con datos reales (el FCF calculado de McDonald's coincide con el publicado, 7.186 M$).
+
+- **Pedir a la IA que justifique cada parámetro.** Ninguno de los tres errores del apartado 3 era de cálculo: eran datos y decisiones de diseño presentados como obvios. Ahora le pedimos fuente y alternativa para cada uno.
+
+- **Pensar en quien usa la web, no solo en el cálculo.** Una fórmula correcta no basta si el usuario no puede usarla (caso 3). Una auditoría de legibilidad encontró 68 tipos de texto por debajo de 12 px y 89 con poco contraste, y en el móvil la tabla de ratios escondía la mediana del sector. Debimos revisarla como usuario desde el principio.
+
+**Alcance.** La verificación automática con la fuente primaria cubre las empresas que presentan un 10-K ante la SEC. Para emisores españoles como Inditex o Santander, la fuente primaria son sus cuentas en la CNMV. La web lo indica, pero ese contraste queda fuera del proyecto.
+
+*Uso de IA:* ChatGPT/Codex (prototipo y primeras versiones de la web) y Claude (flujo de caja, casos límite, verificación con la SEC, comparables, DCF, auditoría y redacción de este informe). La IA escribió código y documentación. Ningún cálculo de la web depende de un modelo generativo: todas las fórmulas son código determinista con pruebas. Las decisiones del apartado 2 son del equipo.
