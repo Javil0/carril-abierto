@@ -71,8 +71,8 @@ export function altmanAnalysis(current){
 // Avisos de contexto que cambian la lectura de varios ratios a la vez.
 export function contextNotes(period){
  const c=period.values,notes=[];
- if(finite(c.equity)&&c.equity<=0)notes.push('Patrimonio ordinario negativo ('+(c.equity/1e6).toLocaleString('es-ES',{maximumFractionDigits:0})+' M '+period.currency+'): suele deberse a recompras de acciones o dividendos por encima del beneficio acumulado, o a pérdidas acumuladas. D/E, ROE y DuPont quedan sin interpretar.');
- const nd=netDebt(c);if(finite(nd)&&nd<0)notes.push('Caja neta: el efectivo y las inversiones corrientes superan a la deuda financiera en '+(-nd/1e6).toLocaleString('es-ES',{maximumFractionDigits:0})+' M '+period.currency+'.');
+ if(finite(c.equity)&&c.equity<=0)notes.push('Patrimonio ordinario negativo ('+(c.equity/1e6).toLocaleString('es-ES',{maximumFractionDigits:0,useGrouping:'always'})+' M '+period.currency+'): suele deberse a recompras de acciones o dividendos por encima del beneficio acumulado, o a pérdidas acumuladas. D/E, ROE y DuPont quedan sin interpretar.');
+ const nd=netDebt(c);if(finite(nd)&&nd<0)notes.push('Caja neta: el efectivo y las inversiones corrientes superan a la deuda financiera en '+(-nd/1e6).toLocaleString('es-ES',{maximumFractionDigits:0,useGrouping:'always'})+' M '+period.currency+'.');
  const own=freeCashFlow(c);if(finite(own)&&finite(c.fcfReported)&&Math.abs(own-c.fcfReported)>Math.max(1,Math.abs(c.fcfReported)*0.01))notes.push('El FCF calculado (flujo operativo − capex) difiere más de un 1 % del FCF publicado por Yahoo; se usa el calculado. Revisa el estado de flujos de efectivo.');
  return notes;
 }

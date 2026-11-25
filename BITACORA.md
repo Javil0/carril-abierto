@@ -208,3 +208,20 @@ Publicación: https://carril-cfa-balance.handywood33.chatgpt.site
   - la clasificación por industrias;
   - McDonald's con datos reales;
   - la lectura de la curva del BCE.
+
+## 25/11/2026 · Auditoría de legibilidad y uso
+- Revisión automática en un navegador real, en tres anchos (1440, 1280 y 390 px), de la portada, las cinco pestañas y los tres diálogos. Se midió el tamaño y el contraste de cada texto visible (unos 2.200 en escritorio) y se probaron 34 acciones: búsqueda y errores, cambio de ejercicio, filtros, comparables, diálogos (también con Escape), exportaciones CSV, verificación SEC, DCF, enlaces directos, recarga, botón «atrás» y navegación con teclado.
+- Resultado de la revisión: todas las funciones respondían, sin errores de JavaScript. En cambio:
+  - **Letra pequeña:** 68 tipos de texto medían menos de 12 px, y en móvil algunos bajaban a 6–8 px.
+  - **Poco contraste:** 89 tipos de texto quedaban por debajo del contraste mínimo (WCAG AA, 4,5:1). Era gris claro sobre fondo claro, también en las pestañas no seleccionadas y en las cabeceras de tabla.
+  - **Tabla de ratios en móvil:** al añadir la columna «Sector», la regla de móvil ocultaba el sector en vez de la lectura, que quedaba aplastada en una columna de una palabra por línea.
+  - **Leyenda de la financiación en móvil:** se cortaba.
+  - **Filtros en móvil:** se salían de la pantalla.
+  - **Cifras de cuatro dígitos:** salían sin separador de miles («6220,00 M»).
+- Correcciones:
+  - Una capa de legibilidad al final de `styles.css`: mínimo de 12 px (13–14 px en notas) y tres grises con contraste ≥ 4,5:1 sobre todos los fondos.
+  - Zonas táctiles más grandes.
+  - En móvil, la tabla de ratios muestra el ejercicio actual y el sector. El año anterior, la lectura y la fórmula siguen en el detalle de cada ratio.
+  - Leyenda bajo el gráfico, y filtros y pestañas con desplazamiento horizontal.
+  - Separador de miles siempre.
+- Tras los cambios: 0 textos por debajo de 12 px, 0 por debajo del contraste mínimo, 34 de 34 acciones correctas y 36 pruebas superadas.

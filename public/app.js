@@ -3,7 +3,7 @@ import { compareWithSec, fillFromSec } from './verify.mjs';
 import { position, peerGroups, defaultGroup, groupById } from './peers.mjs';
 import { createDcfView } from './dcf-view.mjs';
 const $=id=>document.getElementById(id),finite=n=>typeof n==='number'&&Number.isFinite(n);
-const fmt=(n,d=2)=>finite(n)?new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d}).format(n):'—';
+const fmt=(n,d=2)=>finite(n)?new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d,useGrouping:'always'}).format(n):'—';
 const money=n=>finite(n)?fmt(n/1e6,2):'—';
 let report=null,selectedDate=null,activeFilter='Todos',requestSequence=0,toastTimer;
 let secData=null,secError=null,secLoading=false,secOriginal=null,secFilled=[],peerData=null,peerError=null,peerGroupId='',peerSequence=0;
