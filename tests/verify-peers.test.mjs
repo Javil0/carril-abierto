@@ -80,3 +80,15 @@ test('Sector real Inditex: grupo de moda con ejercicios y monedas distintos',asy
  assert.equal(r.group.name,'Moda y distribución textil');assert.equal(r.peers.length,6);assert.deepEqual(r.excluded.map(e=>e.ticker),['ADS.DE']);assert.equal(r.peers.find(p=>p.ticker==='HM-B.ST').currency,'SEK');
  assert.ok(r.stats.roe.n>=5&&r.stats.roe.median>0);
 });
+// Partidas que Yahoo no entregó al servidor de Vercel (comprobado el 25/11/2026) y se reconstruyen con otras del mismo cierre. Cifras reales en millones.
+test('Reconstruye EBIT, flujo operativo, EBITDA y cuentas a cobrar cuando faltan',()=>{
+ const pay=(rows,cur='EUR')=>({timeseries:{result:Object.entries(rows).map(([c,v])=>series(c,v*1e6,'2025-12-31',cur))}});
+ const ibe=parseFinancials(pay({TotalAssets:160762,PretaxIncome:8097,InterestExpense:2173,ReconciledDepreciation:6493,TotalRevenue:44000}),'IBE.MC').periods[0];
+ assert.equal(ibe.values.ebit,10270e6);assert.equal(ibe.raw.find(r=>r.key==='ebit').status,'derived'); // = EBIT publicado por Yahoo
+ assert.equal(ibe.values.ebitda,16763e6);                                                               // = EBITDA publicado por Yahoo
+ const asml=parseFinancials(pay({TotalAssets:50567,CashFlowFromContinuingOperatingActivities:12659}),'ASML.AS').periods[0];assert.equal(asml.values.ocf,12659e6);
+ const tef=parseFinancials(pay({TotalAssets:92017,FreeCashFlow:4667,CapitalExpenditure:-5055}),'TEF.MC').periods[0];assert.equal(tef.values.ocf,9722e6);
+ const san=parseFinancials(pay({TotalAssets:1867515,Receivables:11132}),'SAN.MC').periods[0];assert.equal(san.values.receivables,11132e6);assert.equal(san.values.ebit,null); // un banco no tiene EBIT: no se inventa
+ const keep=parseFinancials(pay({TotalAssets:100,EBIT:50,PretaxIncome:10,InterestExpense:5}),'X').periods[0];assert.equal(keep.values.ebit,50e6);assert.equal(keep.raw.find(r=>r.key==='ebit').status,'available'); // nunca sustituye una cifra publicada
+ const fx=parseFinancials({timeseries:{result:[series('TotalAssets',100e6,'2025-12-31','USD'),series('PretaxIncome',8e6,'2025-12-31','EUR'),series('InterestExpense',2e6,'2025-12-31','USD')]}},'Y').periods[0];assert.equal(fx.values.ebit,null); // no mezcla monedas
+});

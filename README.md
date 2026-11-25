@@ -18,7 +18,7 @@ Cada cifra enseña su fórmula y de dónde sale. Si falta un dato, el ratio qued
 | Parte | Detalle |
 |---|---|
 | Datos | Yahoo Finance (fundamentals-timeseries): balance, resultados, flujos de caja y capitalización histórica de cada cierre anual. |
-| Ratios | Corriente, rápido, deuda/patrimonio, deuda/activos, cobertura de intereses, deuda neta/EBITDA, rotación de inventarios, rotación de activos, margen operativo, ROA, ROE, cobertura de deuda por flujo operativo y FCF yield. |
+| Ratios | Corriente, rápido, deuda/patrimonio, deuda/activos, cobertura de intereses, deuda neta/EBITDA, rotación de inventarios, rotación de activos, margen EBIT, ROA, ROE, cobertura de deuda por flujo operativo y FCF yield. |
 | Casos límite | Con patrimonio negativo, D/E, ROE y DuPont no se interpretan. Una deuda neta negativa se muestra como «caja neta». El FCF calculado se contrasta con el publicado. |
 | Verificación SEC | Partida a partida frente al 10-K (EDGAR, us-gaap), con una tolerancia del 0,5 % y un enlace a cada expediente. Opcionalmente, rellena los huecos de Yahoo. |
 | Sector | Mediana y rango P25–P75 de un grupo de comparables. Con menos de 3 valores no se calcula. |

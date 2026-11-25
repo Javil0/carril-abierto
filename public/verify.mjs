@@ -19,7 +19,7 @@ export const secConcepts=[
  {key:'ocf',label:'Flujo de caja operativo',tags:['NetCashProvidedByUsedInOperatingActivities'],kind:'duration'},
  {key:'capex',label:'Capex (inversión en inmovilizado)',tags:['PaymentsToAcquirePropertyPlantAndEquipment'],kind:'duration',absolute:true},
  {key:'ebit',label:'EBIT de Yahoo frente a resultado operativo del 10-K',tags:['OperatingIncomeLoss'],kind:'duration',definitional:true,
-  note:'No es la misma magnitud: Yahoo calcula el EBIT desde el resultado antes de impuestos (incluye ingresos financieros y otros resultados); el 10-K publica el resultado operativo. La diferencia no cuenta como error, pero afecta al margen operativo y a Altman.'},
+  note:'No es la misma magnitud: Yahoo calcula el EBIT desde el resultado antes de impuestos (incluye ingresos financieros y otros resultados); el 10-K publica el resultado operativo. La diferencia no cuenta como error, pero afecta al margen EBIT y a Altman.'},
 ];
 const days=(a,b)=>Math.abs(Date.parse(a)-Date.parse(b))/864e5;
 export const filingUrl=(cik,accn)=>`https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${String(accn).replace(/-/g,'')}/${accn}-index.htm`;

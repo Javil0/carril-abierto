@@ -141,3 +141,17 @@ Publicación: https://carril-cfa-balance.handywood33.chatgpt.site
 - La ventana pasa de 200 días a 12 meses: se usa el ejercicio de cada comparable más cercano al de la empresa, y la web muestra su fecha.
 - Se descargan como mucho 8 comparables por consulta. En banca, seguros e inmobiliario se muestra un aviso sobre la lectura de los ratios.
 - 24 pruebas superadas.
+
+## 25/11/2026 · Datos que faltaban en la web aunque Yahoo los tiene
+- Problema: en varias empresas la web publicada mostraba partidas como «no disponibles» que en Yahoo sí aparecen.
+- Revisión con el navegador, comparando la web y Yahoo empresa a empresa:
+  - **Santander y la banca en general:** no es un fallo. Yahoo presenta el balance y la cuenta de un banco en otro formato (préstamos, depósitos, margen de intereses, CET1) y no tiene activo y pasivo corrientes, EBIT, EBITDA ni coste de ventas. Lo que en Yahoo figura como «coste» es el gasto por intereses de depósitos. Esos ratios siguen pendientes a propósito. Solo se recupera «Receivables» (11.132 M€).
+  - **Iberdrola (EBIT) y ASML (flujo operativo):** fallo real. Con la misma petición, el navegador recibe los datos de Yahoo, pero el servidor de Vercel (Washington) los recibe vacíos. No depende de los parámetros de región: Yahoo responde distinto según desde dónde se consulte.
+  - **Telefónica (flujo operativo):** Yahoo no lo publica, pero sí el FCF y el capex.
+  - **TotalEnergies (FCF yield):** se publica en dólares y su capitalización en euros. El ratio queda pendiente por mezcla de monedas, de forma deliberada.
+- Decisión: reconstruir la partida con otras del mismo cierre y moneda, solo si falta, y marcarla como «derivada» con su fórmula en Datos brutos. Nunca se sustituye una cifra publicada.
+  - EBIT = resultado antes de impuestos + gasto por intereses. Es la definición de Yahoo: coincide exactamente en IBE, ITX, MCD, REP y TEF. Apple no publica intereses, así que no se reconstruye.
+  - Flujo operativo = flujo de operaciones continuadas, o bien FCF + capex. ASML: 12.659 M€; Telefónica: 9.722 M€.
+  - EBITDA = EBIT + amortizaciones. IBE: 10.270 + 6.493 = 16.763 M€, igual al publicado.
+  - Deuda corriente y no corriente incluidos arrendamientos (Nestlé), y «Receivables» como cuentas a cobrar.
+- 25 pruebas superadas (1 nueva, con las cifras reales de IBE, ASML, TEF y SAN, que comprueba también que no se mezclan monedas ni se pisan datos publicados).
