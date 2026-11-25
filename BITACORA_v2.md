@@ -25,7 +25,7 @@
 - La misma etiqueta («EBIT») puede referirse a magnitudes distintas.
 - Algunos ratios dejan de tener sentido en ciertos casos: el ROE con patrimonio negativo, la deuda neta/EBITDA con caja neta o el Altman en bancos.
 
-## 2. Las tres decisiones importantes y lo que descartamos
+## 2. Las decisiones importantes y lo que descartamos
 
 ### Decisión 1 · Ningún dato inventado: «Pendiente» antes que un número dudoso
 Si falta una partida, si el denominador es cero o negativo o si los periodos no coinciden, el ratio no se calcula y se explica por qué. Los promedios exigen un cierre anterior en la misma moneda.
@@ -47,6 +47,14 @@ Hay 30 grupos (Ibex 35, Euro Stoxx 50 y grandes cotizadas de EE. UU.) con 247 ti
 - **Descartado (1):** las «recomendaciones» de Yahoo. Proponen las empresas que siguen los mismos inversores, no las del mismo sector: para Inditex, Iberdrola, Repsol y ACS.
 - **Descartado (2):** dejar que el usuario escriba su propia lista. Así no podríamos justificar ningún grupo. El servidor conserva la opción, pero la interfaz ya no la ofrece.
 - **Ejemplo:** en el grupo de restauración de McDonald's, SBUX, YUM y DPZ también tienen patrimonio negativo. La mediana del ROE (47,4 %) sale solo de CMG, DRI y QSR, y la web indica qué empresas se excluyen.
+
+### Decisión 4 · DCF por FCFF con una beta construida desde Damodaran, y todo editable
+La pestaña «Valoración DCF» descuenta los flujos de caja libres para la empresa (FCFF) al WACC, con valor terminal por Gordon o por múltiplo EV/EBITDA. Cada supuesto parte del histórico (media de tres ejercicios) o de una fuente citada, y el usuario puede cambiarlo. Lo cambiado queda marcado como «supuesto del usuario».
+- **La beta:** la beta desapalancada de la industria de Damodaran (05/01/2026) se reapalanca con la D/E de la empresa a valor de mercado: βL = βU × [1 + (1 − t) × D/E]. Junto a la fórmula, un aviso explica que la beta supone el riesgo medio del sector y una deuda estable, y que no es una regresión de la cotización.
+- **Hallazgo:** Damodaran desapalanca con el tipo marginal (25 % en EE. UU.), no con el efectivo. Lo comprobamos en sus 288 filas y reapalancamos con ese mismo tipo para que ida y vuelta sean coherentes.
+- **Descartado (1):** la beta de Yahoo. Exige un token, depende de la ventana de regresión y es muy ruidosa por empresa. La media de una industria con decenas de empresas es más estable y se puede explicar.
+- **Descartado (2):** valorar bancos y aseguradoras por FCFF. Su deuda es materia prima, no financiación, así que la web lo bloquea y explica por qué.
+- **Ejemplo:** McDonald's vale 192 $ por acción con Gordon al 2 % y 305 $ con el múltiplo de su industria, frente a 281 $ de cotización. El valor terminal pesa el 77 % del EV. La web enseña esa sensibilidad en lugar de esconderla en una cifra.
 
 ## 3. Dónde falló la máquina: tres casos
 
@@ -73,7 +81,7 @@ Hay 30 grupos (Ibex 35, Euro Stoxx 50 y grandes cotizadas de EE. UU.) con 247 ti
 ## 4. Qué haríamos distinto
 
 - **Contrastar con la fuente primaria desde el primer día.** La verificación con la SEC llegó el 06/11, y hasta entonces la web llamó «margen operativo» a un EBIT que no lo es. Si empezáramos de nuevo, antes de escribir ninguna fórmula compararíamos tres empresas con su 10-K.
-- **Escribir el criterio de éxito antes de empezar.** La propuesta decía que los cálculos «se comprobarán con ejemplos calculados manualmente», pero no fijaba qué cuenta como acierto. Hoy hay 24 pruebas con datos reales guardados en `tests/fixtures` (por ejemplo, el FCF calculado de McDonald's coincide con el publicado: 7.186 M$). Habría sido mejor definirlas como objetivo desde el principio.
+- **Escribir el criterio de éxito antes de empezar.** La propuesta decía que los cálculos «se comprobarán con ejemplos calculados manualmente», pero no fijaba qué cuenta como acierto. Hoy hay 36 pruebas con datos reales guardados en `tests/fixtures` (por ejemplo, el FCF calculado de McDonald's coincide con el publicado: 7.186 M$). Habría sido mejor definirlas como objetivo desde el principio.
 - **No aceptar cambios sin pruebas.** El 22/10 el Altman pasó a calcularse automáticamente sin ejecutar ninguna prueba, también para bancos, donde el modelo clásico no está pensado. Hoy la web muestra un aviso de lectura en banca, seguros e inmobiliario, pero esa decisión debería haberse tomado y probado en el mismo cambio.
 - **Pedirle a la IA que justifique cada parámetro.** Los tres errores del apartado 3 son datos y decisiones de diseño que la IA presentó como obvios: qué ticker usar, cómo agrupar y qué ventana fijar. Ninguno era un fallo de código. Desde ahora le pedimos la fuente y una alternativa para cada parámetro que propone, y comprobamos cada dato antes de usarlo.
 

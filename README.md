@@ -8,6 +8,7 @@ Introduces un ticker y la web descarga los estados financieros anuales de la emp
 - Calcula **13 ratios** en cinco dimensiones: liquidez, deuda, actividad, rentabilidad y flujo de caja. También hace el **DuPont** y el **Altman Z-score**.
 - **Contrasta las cifras con el 10-K** presentado en la SEC, que es la fuente primaria.
 - Compara cada ratio con la **mediana de su sector**.
+- Hace una **valoración DCF** (FCFF) con todos los supuestos editables. La beta sale de las tablas de Damodaran, reapalancada con la deuda de la empresa.
 
 Cada cifra enseña su fórmula y de dónde sale. Si falta un dato, el ratio queda «Pendiente»: la web nunca se inventa un valor.
 
@@ -22,6 +23,7 @@ Cada cifra enseña su fórmula y de dónde sale. Si falta un dato, el ratio qued
 | Casos límite | Con patrimonio negativo, D/E, ROE y DuPont no se interpretan. Una deuda neta negativa se muestra como «caja neta». El FCF calculado se contrasta con el publicado. |
 | Verificación SEC | Partida a partida frente al 10-K (EDGAR, us-gaap), con una tolerancia del 0,5 % y un enlace a cada expediente. Opcionalmente, rellena los huecos de Yahoo. |
 | Sector | Mediana y rango P25–P75 de un grupo de comparables. Con menos de 3 valores no se calcula. |
+| DCF | FCFF a 5 años y valor terminal por Gordon o múltiplo EV/EBITDA. WACC por CAPM: beta desapalancada de Damodaran (05/01/2026) reapalancada con la fórmula de Hamada, ERP y prima de riesgo país de Damodaran, tipo libre de riesgo del Treasury a 10 años (USD) o del BCE (EUR). Tabla de sensibilidad. No se calcula en banca ni seguros. |
 
 ## Estructura
 
@@ -30,7 +32,10 @@ public/     Web estática (HTML, CSS y módulos JS compartidos con el servidor)
   finance.mjs   Fórmulas de los ratios, DuPont, Altman y avisos
   verify.mjs    Extracción y comparación con el 10-K
   peers.mjs     Grupos de comparables y estadística
-api/        Funciones de Vercel: /api/financials, /api/sec, /api/peers
+  dcf.mjs       Modelo DCF (FCFF, WACC, valor terminal, sensibilidad)
+  dcf-view.mjs  Pestaña «Valoración DCF»
+  damodaran.mjs Copia fechada de las tablas de Damodaran (betas, EV/EBITDA, ERP, riesgo país e industria de cada empresa)
+api/        Funciones de Vercel: /api/financials, /api/sec, /api/peers, /api/market
 lib/        Descarga de Yahoo y de la SEC, con caché y control de errores
 tests/      Pruebas con datos reales guardados (tests/fixtures)
 prototipo-streamlit/   Primera versión (CSV/Excel + Streamlit)
@@ -43,7 +48,7 @@ BITACORA.md Decisiones, errores detectados y verificación
 Requiere Node 20 o superior. No hay dependencias que instalar.
 
 ```bash
-npm test          # 24 pruebas
+npm test          # 36 pruebas
 npx vercel dev    # web y funciones en http://localhost:3000
 ```
 
@@ -55,6 +60,6 @@ npx vercel dev    # web y funciones en http://localhost:3000
 
 ## Uso de inteligencia artificial
 
-- Las primeras versiones de la web se desarrollaron con ChatGPT/Codex. Las mejoras de noviembre (flujo de caja, casos límite, verificación con la SEC y comparación sectorial) se hicieron con Claude (Anthropic).
+- Las primeras versiones de la web se desarrollaron con ChatGPT/Codex. Las mejoras de noviembre (flujo de caja, casos límite, verificación con la SEC, comparación sectorial y valoración DCF) se hicieron con Claude (Anthropic).
 - La IA se usó para escribir código y documentación. Ningún cálculo depende de un modelo generativo: todas las fórmulas son código determinista y están probadas.
 - Las decisiones, los errores detectados y su contraste con fuentes primarias están en [BITACORA.md](BITACORA.md).

@@ -155,3 +155,56 @@ Publicación: https://carril-cfa-balance.handywood33.chatgpt.site
   - EBITDA = EBIT + amortizaciones. IBE: 10.270 + 6.493 = 16.763 M€, igual al publicado.
   - Deuda corriente y no corriente incluidos arrendamientos (Nestlé), y «Receivables» como cuentas a cobrar.
 - 25 pruebas superadas (1 nueva, con las cifras reales de IBE, ASML, TEF y SAN, que comprueba también que no se mezclan monedas ni se pisan datos publicados).
+
+## 25/11/2026 · Valoración DCF (FCFF) con la beta de Damodaran
+- Objetivo: que la web también valore la empresa por descuento de flujos, con todos los supuestos editables (crecimiento, márgenes, WACC, valor terminal…).
+- Modelo: **FCFF** (flujo libre para la empresa), el estándar del temario CFA. FCFF = EBIT × (1 − t) + amortizaciones − capex − inversión en circulante. Se proyectan 5 años (de 1 a 15) y se descuentan al WACC, con la convención de mitad de año activada por defecto. El valor terminal se calcula por Gordon (g∞ = 2 % por defecto) o con un múltiplo EV/EBITDA. Del valor de empresa se resta la deuda neta y los minoritarios a valor contable.
+- Supuestos de partida, cada uno con su fórmula visible:
+  - Crecimiento: CAGR de los ingresos de los tres últimos ejercicios.
+  - Margen EBIT, amortizaciones, capex y circulante: media de los tres últimos ejercicios, en % de los ingresos.
+  - Tipo impositivo: Σ impuestos / Σ resultado antes de impuestos.
+  - Coste de la deuda: gasto por intereses / deuda media.
+  - Para ello se añadieron cinco series de Yahoo, que también aparecen en Datos brutos: resultado antes de impuestos, impuestos, amortizaciones, variación del circulante y acciones en circulación.
+- **Beta**, como propuso el equipo:
+  - Se parte de la beta desapalancada de la industria en las tablas de Aswath Damodaran (NYU Stern, actualización del 05/01/2026) y se reapalanca con la D/E de la empresa a valor de mercado (Hamada).
+  - La web explica cómo se construye y avisa de que es una estimación.
+  - La tabla se guarda como copia fechada (`public/damodaran.mjs`), no se consulta en directo: así el cálculo es reproducible.
+  - La industria de cada empresa sale de la propia clasificación de Damodaran (`indname.xls`): cubre 246 de nuestros 247 tickers. La excepción es Volkswagen, que toma la industria más frecuente de su grupo (Auto & Truck).
+  - Hay tres tablas, EE. UU., Europa occidental y global, según la región de la empresa. El usuario puede cambiar la industria, la tabla o la beta.
+- **Hallazgo al comprobar las tablas:**
+  - Damodaran desapalanca con el tipo **marginal** de cada región (25 % en EE. UU. y 24,71 % en Europa), no con el efectivo. Lo comprobamos en las 288 filas: βu = β / (1 + 0,75 × D/E) reproduce su beta desapalancada.
+  - Por eso reapalancamos con ese mismo tipo marginal: si usáramos el tipo efectivo de la empresa, ida y vuelta no serían coherentes.
+  - Hay una prueba automática que reapalanca cada industria con su D/E y recupera la beta apalancada publicada.
+- Resto del WACC:
+  - **ERP:** prima de un mercado maduro de Damodaran (4,23 %).
+  - **Prima de riesgo país**, según la sede (España: 1,55 %; EE. UU.: 0,23 %).
+  - **Tipo libre de riesgo:** Treasury a 10 años (índice ^TNX, vía Yahoo) para cuentas en USD, o curva AAA a 10 años del BCE para cuentas en EUR. En otras monedas lo introduce el usuario.
+  - **Pesos:** a valor de mercado, con la misma D/E que la beta.
+- **Bloqueos y avisos:**
+  - Banca y seguros no se valoran por FCFF. La deuda es su materia prima, así que se muestra el motivo.
+  - Si g∞ ≥ WACC, no se calcula.
+  - Avisos cuando:
+    - el valor terminal supera el 75 % del EV;
+    - el FCFF proyectado es negativo;
+    - g∞ supera al tipo libre de riesgo;
+    - la acción cotiza en otra moneda que las cuentas (TSM: USD frente a TWD); en ese caso no se compara con la cotización.
+  - Apple no publica gasto por intereses: el coste de la deuda queda «Pendiente» y lo introduce el usuario. No se inventa.
+- **Ejemplo (McDonald's, 25/11/2026):**
+  - βu de Restaurant/Dining 0,767, D/E de mercado 0,274 → βL 0,925 → Ke 8,96 %.
+  - Con un peso de la deuda del 21,5 %, el WACC es del 7,54 %.
+  - El patrimonio contable negativo no impide calcular la D/E, porque se usa la capitalización.
+  - Resultados: valor por acción de 192 $ con Gordon al 2 % y de 305 $ con el múltiplo de la industria (17,5×), frente a 281 $ de cotización.
+  - La diferencia entre los dos métodos y el peso del valor terminal (77 %) son justo lo que la web enseña a leer.
+  - Su coste histórico de la deuda (2,96 %) está por debajo del tipo libre de riesgo (4,8 %), porque la deuda se emitió con tipos más bajos. La web lo advierte, porque para el WACC conviene el coste marginal actual.
+- 36 pruebas superadas (11 nuevas):
+  - un DCF calculado a mano;
+  - la convención de mitad de año;
+  - la coherencia entre Gordon y el múltiplo;
+  - el WACC por CAPM;
+  - los datos pendientes;
+  - Hamada frente a Damodaran;
+  - los bloqueos;
+  - la tabla de sensibilidad;
+  - la clasificación por industrias;
+  - McDonald's con datos reales;
+  - la lectura de la curva del BCE.
