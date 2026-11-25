@@ -138,7 +138,37 @@
 
 ## 3. ¿Dónde falló la máquina?
 
-*(pendiente)*
+> **Herramientas.** Las primeras versiones de la web se hicieron con ChatGPT/Codex. Las mejoras de noviembre (flujo de caja, casos límite, verificación con la SEC, comparables y DCF) se hicieron con Claude. Los tres casos son de esta última fase.
+
+### Caso 1 · Tickers que no correspondían a la empresa o que no tenían datos
+
+- **Qué nos dijo.** Al montar los 30 grupos de comparables, la IA propuso «FI» como ticker de Fiserv y «ROG.SW» para Roche, e incluyó a Logista en su grupo. Los presentó como tickers válidos de Yahoo Finance, sin ninguna advertencia.
+- **Cómo lo detectamos.** Antes de publicar comprobamos uno a uno los 248 tickers propuestos. Para Fiserv y Roche, Yahoo no devolvía estados financieros con esos tickers. Logista existía, pero Yahoo no tenía su último ejercicio, así que habría quedado fuera de cualquier mediana sin que nadie lo notara.
+- **Fuente primaria.** *[A confirmar: la bolsa en la que cotiza cada empresa, Nasdaq para Fiserv y SIX Swiss Exchange para Roche, o la ficha de la empresa en Yahoo Finance.]* Fiserv cotiza como «FISV» y Roche como «RO.SW».
+- **Por qué importa.** Un ticker erróneo hace que un comparable desaparezca sin avisar o, peor, que en la mediana entren datos de otra cotización.
+- **Corrección.** Fiserv pasó a «FISV» y Roche a «RO.SW», y Logista quedó excluida. Quedan 247 tickers, y la web muestra qué comparables no tienen datos.
+
+### Caso 2 · Agrupó a Inditex por índice bursátil y no por sector
+
+- **Qué nos dijo.** En el primer reparto de comparables (14 grupos), la IA metió a Inditex en un grupo del Ibex junto a Repsol, Aena y Telefónica. La mediana «sectorial» de Inditex se calculaba frente a una petrolera, un gestor aeroportuario y una teleco.
+- **Cómo lo detectamos.** Inditex era el ejemplo de la portada. Su rotación de inventarios y su margen se comparaban con empresas que casi no tienen inventario o cuyos márgenes responden a una estructura de costes distinta. Las posiciones «por encima» o «por debajo del rango» no tenían ningún sentido.
+- **Fuente primaria.** Las cuentas anuales de Inditex depositadas en la CNMV, que describen su actividad como diseño, fabricación y distribución minorista de moda.
+- **Corrección.** Se creó el grupo «Moda y distribución textil» con H&M, TJX, Ross, Gap, Lululemon, Nike y Adidas. Como los ratios no tienen unidades, se pueden comparar aunque H&M presente sus cuentas en coronas suecas. A raíz de este caso revisamos el resto de grupos con el mismo criterio: actividad, no índice.
+
+### Caso 3 · Propuso que el usuario introdujera la beta a mano
+
+- **Qué nos dijo.** Al diseñar el DCF, la IA propuso que varios parámetros del WACC los introdujera el usuario: la beta, el tipo libre de riesgo, la prima de riesgo de mercado y el coste de la deuda. En el caso de la beta lo justificó así: «Yahoo exige un token para darla y cambia según la ventana de cálculo. Es más honesto que el usuario la introduzca e indique su fuente.»
+- **Cómo lo detectamos.** Al revisar el plan vimos que no iba a funcionar.
+  - El usuario de la web no tiene una beta a mano, así que acabaría escribiendo un número sin justificar.
+  - Dos usuarios obtendrían valores distintos para la misma empresa.
+  - La web perdería lo que la diferencia: que cada cifra tenga una fuente. El DCF habría quedado como una calculadora vacía.
+- **Fuente primaria.** Las tablas de betas por industria de Aswath Damodaran (NYU Stern, actualización del 05/01/2026; archivos `betas.xls`, `betaEurope.xls` y `betaGlobal.xls`). Recogen, para cada industria, la beta media, la deuda/patrimonio de mercado, el tipo impositivo y la beta desapalancada.
+- **Corrección.**
+  - La web descarga la beta desapalancada de la industria de la empresa, según la clasificación de Damodaran.
+  - La vuelve a apalancar con la deuda/patrimonio de la empresa a valor de mercado: βL = βU × [1 + (1 − t) × D/E].
+  - El usuario puede cambiarla, pero parte de una cifra con fuente.
+  - La prima de riesgo de mercado y la de riesgo país también salen de Damodaran. El tipo libre de riesgo sale del Treasury a 10 años o de la curva del Banco Central Europeo, y el coste de la deuda, del histórico de la empresa.
+- **Comprobación de la fórmula.** Al verificarla contra las tablas vimos que Damodaran desapalanca con el tipo **marginal** (25 % en EE. UU.), no con el efectivo, que es el que proponía la IA. Reapalancando con ese mismo tipo se recupera la beta apalancada publicada en las 288 filas de sus tablas (96 industrias en cada una de las tres regiones). Esa comprobación quedó como una prueba automática del proyecto.
 
 ## 4. ¿Qué haríamos distinto?
 
