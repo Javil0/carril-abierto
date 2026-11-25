@@ -155,8 +155,8 @@
   - Varios ratios quedaban pendientes sin motivo real.
 - **Cómo lo detectamos.** Comparando empresa a empresa la web publicada con Yahoo Finance abierto en el navegador. Las partidas que la web daba por inexistentes sí aparecían en Yahoo.
   - **La causa:** Yahoo responde distinto según desde dónde se le consulte. Al servidor de Vercel (en Washington) le llegaban vacías series que desde el navegador sí aparecen, con la misma petición.
-  - **Por qué no lo vimos antes:** las pruebas usaban datos descargados desde el navegador, así que nunca reproducían lo que recibía el servidor.
-- **Fuente primaria.** Los estados financieros de cada empresa tal como los publica Yahoo Finance (balance, resultados y flujos de caja), consultados desde el navegador. Sirvieron para confirmar que los datos existían y para comprobar las fórmulas de reconstrucción.
+  - **Comprobación en el entorno real:** desde entonces, todo se comprueba en la web publicada, en el mismo entorno que usa cualquier usuario.
+- **Fuente primaria.** Los estados financieros de cada empresa tal como los publica Yahoo Finance (balance, resultados y flujos de caja), consultados directamente en su web. Sirvieron para confirmar que los datos existían y para comprobar las fórmulas de reconstrucción.
 - **Corrección.**
   - Cuando falta una partida, la web la calcula con otras del mismo ejercicio y la misma moneda:
     - EBIT = resultado antes de impuestos + gasto por intereses;
@@ -184,4 +184,22 @@
 
 ## 4. ¿Qué haríamos distinto?
 
-*(pendiente)*
+- **Pedirle a la IA varios planes antes de empezar y elegir el que mejor encajara.**
+  - Empezamos construyendo la primera idea que teníamos: un prototipo en Streamlit para subir CSV o Excel. Más tarde vimos que buscar por ticker era mucho mejor para el usuario.
+  - Si al principio hubiéramos pedido a la IA dos o tres planes distintos (subir documentos, buscar por ticker, conectar con una base de datos), con sus ventajas e inconvenientes, habríamos comparado las opciones antes de programar. Probablemente nos habríamos ahorrado el prototipo.
+- **No aceptar cambios sin pruebas.**
+  - El 22/10 el Altman pasó a calcularse automáticamente sin ejecutar ninguna prueba, también para bancos, donde el modelo clásico no está pensado. Hoy la web avisa en banca, seguros e inmobiliario, pero esa decisión debería haberse tomado y probado en el mismo cambio.
+  - Desde noviembre, cada cambio llega con su prueba. Hay 36 pruebas con datos reales guardados; por ejemplo, el FCF calculado de McDonald's coincide con el publicado (7.186 M$).
+- **Pedirle a la IA que justifique cada parámetro.**
+  - Los tres errores del apartado 3 son datos y decisiones de diseño que la IA presentó como obvios: con qué empresas comparar a Inditex, qué significa una serie vacía y quién pone la beta.
+  - Ninguno era un fallo de cálculo. Ahora le pedimos la fuente y una alternativa para cada parámetro que propone, y comprobamos cada dato antes de usarlo.
+- **Pensar en quien usa la web, no solo en el cálculo.**
+  - Una fórmula correcta no basta si el usuario no puede usarla. Pedirle una beta que no tiene (caso 3) habría dejado el DCF vacío.
+  - Una auditoría de legibilidad en un navegador real encontró 68 tipos de texto por debajo de 12 px y 89 con poco contraste. En el móvil, además, la tabla de ratios escondía la mediana del sector.
+  - Lo corregimos, pero habría sido mejor revisar la web como usuario desde el principio, en ordenador y en móvil.
+
+**Alcance.** La verificación automática con la fuente primaria cubre las empresas que presentan un 10-K ante la SEC. Para emisores españoles como Inditex o Santander, la fuente primaria son sus cuentas en la CNMV. La web lo indica, pero ese contraste queda fuera del proyecto.
+
+---
+
+*Uso de IA:* ChatGPT/Codex (prototipo y primeras versiones de la web) y Claude (flujo de caja, casos límite, verificación con la SEC, comparables, DCF, auditoría y redacción de este informe). La IA escribió código y documentación. Ningún cálculo de la web depende de un modelo generativo: todas las fórmulas son código determinista con pruebas. Las decisiones del apartado 2 son del equipo.
